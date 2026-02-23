@@ -45,7 +45,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: dotnet-app
-          path: PortfolioDemo/publish.zip
+          path: publish.zip
 
   deploy:
     runs-on: windows-latest
@@ -59,9 +59,6 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: dotnet-app
-
-      - name: List downloaded artifact (debug)
-        run: dir -Recurse dotnet-app
 
       - name: Login to Azure
         uses: azure/login@v2
@@ -77,4 +74,4 @@ jobs:
         with:
           app-name: 'monicarivera-portfolio-demo'
           slot-name: 'Production'
-          package: ./dotnet-app/PortfolioDemo/publish.zip
+          package: ./dotnet-app/publish.zip
