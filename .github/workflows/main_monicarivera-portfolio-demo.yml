@@ -35,11 +35,17 @@ jobs:
         working-directory: PortfolioDemo
         run: dotnet publish -c Release -o ./publish
 
+      - name: Zip publish output
+        working-directory: PortfolioDemo
+        run: |
+          if (Test-Path publish.zip) { Remove-Item publish.zip -Force }
+          Compress-Archive -Path .\publish\* -DestinationPath publish.zip
+
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
         with:
           name: dotnet-app
-          path: PortfolioDemo/publish/**
+          path: PortfolioDemo/publish.zip
 
   deploy:
     runs-on: windows-latest
@@ -71,4 +77,4 @@ jobs:
         with:
           app-name: 'monicarivera-portfolio-demo'
           slot-name: 'Production'
-          package: ./dotnet-app
+          package: ./dotnet-app/publish.zip
