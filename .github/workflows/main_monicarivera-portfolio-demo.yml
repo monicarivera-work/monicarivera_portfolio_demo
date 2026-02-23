@@ -36,10 +36,20 @@ jobs:
         run: dotnet publish -c Release -o ./publish
 
       - name: Zip publish output
-        working-directory: PortfolioDemo
         run: |
-          if (Test-Path ..\publish.zip) { Remove-Item ..\publish.zip -Force }
-          Compress-Archive -Path .\publish\* -DestinationPath ..\publish.zip
+          if (Test-Path publish.zip) { Remove-Item publish.zip -Force }
+          Compress-Archive -Path PortfolioDemo/publish/* -DestinationPath publish.zip -Force
+
+      - name: Verify zip exists
+        run: |
+          if (Test-Path publish.zip) {
+            Write-Host "✓ publish.zip created successfully"
+            Get-Item publish.zip | Select-Object FullName, Length
+          } else {
+            Write-Host "✗ publish.zip NOT found"
+            dir -Recurse
+            exit 1
+          }
 
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
@@ -60,6 +70,12 @@ jobs:
         with:
           name: dotnet-app
 
+      - name: List downloaded artifact (debug)
+        run: |
+          Write-Host "Current directory: $(pwd)"
+          Write-Host "Contents:"
+          dir -Recurse
+
       - name: Login to Azure
         uses: azure/login@v2
         with:
@@ -74,4 +90,4 @@ jobs:
         with:
           app-name: 'monicarivera-portfolio-demo'
           slot-name: 'Production'
-          package: ./dotnet-app/publish.zip
+          package: ./publish.zip
