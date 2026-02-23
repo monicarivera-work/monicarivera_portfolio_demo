@@ -45,7 +45,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: dotnet-app
-          path: publish.zip
+          path: PortfolioDemo/publish.zip
 
   deploy:
     runs-on: windows-latest
@@ -60,10 +60,21 @@ jobs:
         with:
           name: dotnet-app
 
+      - name: List downloaded artifact (debug)
+        run: dir -Recurse dotnet-app
+
+      - name: Login to Azure
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID }}
+          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID }}
+          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID }}
+          client-secret: ${{ secrets.AZUREAPPSERVICE_CLIENTSECRET }}
+
       - name: Deploy to Azure Web App
         id: deploy-to-webapp
         uses: azure/webapps-deploy@v3
         with:
           app-name: 'monicarivera-portfolio-demo'
           slot-name: 'Production'
-          package: ./dotnet-app/publish.zip
+          package: ./dotnet-app/PortfolioDemo/publish.zip
