@@ -38,14 +38,14 @@ jobs:
       - name: Zip publish output
         working-directory: PortfolioDemo
         run: |
-          if (Test-Path publish.zip) { Remove-Item publish.zip -Force }
-          Compress-Archive -Path .\publish\* -DestinationPath publish.zip
+          if (Test-Path ..\publish.zip) { Remove-Item ..\publish.zip -Force }
+          Compress-Archive -Path .\publish\* -DestinationPath ..\publish.zip
 
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
         with:
           name: dotnet-app
-          path: PortfolioDemo/publish.zip
+          path: publish.zip
 
   deploy:
     runs-on: windows-latest
@@ -59,17 +59,6 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: dotnet-app
-
-      - name: List downloaded artifact (debug)
-        run: dir -Recurse dotnet-app
-
-      - name: Login to Azure
-        uses: azure/login@v2
-        with:
-          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID }}
-          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID }}
-          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID }}
-          client-secret: ${{ secrets.AZUREAPPSERVICE_CLIENTSECRET }}
 
       - name: Deploy to Azure Web App
         id: deploy-to-webapp
