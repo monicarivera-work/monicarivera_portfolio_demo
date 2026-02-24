@@ -3,6 +3,83 @@
 @{
     ViewData["Title"] = "Skills";
 }
-<h1>@ViewData["Title"]</h1>
 
-<p>Use this page to display your technical skills and competencies.</p>
+<div class="container py-5">
+    <div class="row">
+        <div class="col-lg-8 mx-auto">
+            <h1 class="mb-5">@ViewData["Title"]</h1>
+
+            <div class="skills-section mb-5">
+                <h4 class="mb-4">Programming Languages</h4>
+                <div class="skill-tags">
+                    <span class="badge bg-primary">C#</span>
+                    <span class="badge bg-primary">C++</span>
+                    <span class="badge bg-primary">Python</span>
+                    <span class="badge bg-primary">Java</span>
+                    <span class="badge bg-primary">JavaScript</span>
+                    <span class="badge bg-primary">VB.NET</span>
+                    <span class="badge bg-primary">SQL</span>
+                    <span class="badge bg-primary">HTML/CSS</span>
+                    <span class="badge bg-primary">XML</span>
+                    <span class="badge bg-primary">JSON</span>
+                    <span class="badge bg-primary">PowerShell</span>
+                </div>
+            </div>
+
+            <div class="skills-section mb-5">
+                <h4 class="mb-4">Frameworks & Tools</h4>
+                <div class="skill-tags">
+                    <span class="badge bg-info">.NET</span>
+                    <span class="badge bg-info">ASP.NET Core</span>
+                    <span class="badge bg-info">Appium</span>
+                    <span class="badge bg-info">WinAppDriver</span>
+                    <span class="badge bg-info">JUnit</span>
+                    <span class="badge bg-info">NUnit</span>
+                    <span class="badge bg-info">Qt Creator</span>
+                    <span class="badge bg-info">PySide2/PyQt5</span>
+                    <span class="badge bg-info">Unity</span>
+                    <span class="badge bg-info">Android Studio</span>
+                    <span class="badge bg-info">WinForms</span>
+                    <span class="badge bg-info">Plotly.js</span>
+                    <span class="badge bg-info">Kendo</span>
+                    <span class="badge bg-info">CEFSharp</span>
+                </div>
+            </div>
+
+            <div class="skills-section mb-5">
+                <h4 class="mb-4">Cloud & DevOps</h4>
+                <div class="skill-tags">
+                    <span class="badge bg-success">Azure Expert</span>
+                    <span class="badge bg-success">Infrastructure-as-Code</span>
+                    <span class="badge bg-success">Git/Version Control</span>
+                    <span class="badge bg-success">Web App Development</span>
+                    <span class="badge bg-success">Full Stack</span>
+                </div>
+            </div>
+
+            <div class="skills-section">
+                <h4 class="mb-4">Testing & Automation</h4>
+                <div class="skill-tags">
+                    <span class="badge bg-warning text-dark">Automated Regression Testing</span>
+                    <span class="badge bg-warning text-dark">GUI Testing</span>
+                    <span class="badge bg-warning text-dark">CI/CD Pipeline Development</span>
+                    <span class="badge bg-warning text-dark">NUnit</span>
+                    <span class="badge bg-warning text-dark">XUnit</span>
+                    <span class="badge bg-warning text-dark">Code Reviews</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .skill-tags {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+    }
+    .badge {
+        font-size: 0.95rem;
+        padding: 0.5rem 1rem;
+    }
+</style>

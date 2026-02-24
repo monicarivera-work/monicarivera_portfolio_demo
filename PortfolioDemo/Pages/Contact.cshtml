@@ -3,6 +3,81 @@
 @{
     ViewData["Title"] = "Contact";
 }
-<h1>@ViewData["Title"]</h1>
 
-<p>Use this page to provide your contact information or a contact form.</p>
+<div class="container py-5">
+    <div class="row">
+        <div class="col-lg-8 mx-auto">
+            <h1 class="mb-5">@ViewData["Title"]</h1>
+
+            <div class="contact-info mb-5">
+                <div class="contact-item mb-4">
+                    <h5 class="mb-2">
+                        <i class="fas fa-envelope me-2"></i> Email
+                    </h5>
+                    <p>
+                        <a href="mailto:Monica.rivera4@outlook.com" class="text-decoration-none">
+                            Monica.rivera4@outlook.com
+                        </a>
+                    </p>
+                </div>
+
+                <div class="contact-item mb-4">
+                    <h5 class="mb-2">
+                        <i class="fas fa-phone me-2"></i> Phone
+                    </h5>
+                    <p>
+                        <a href="tel:5712014599" class="text-decoration-none">
+                            571-201-4599
+                        </a>
+                    </p>
+                </div>
+
+                <div class="contact-item">
+                    <h5 class="mb-2">
+                        <i class="fas fa-map-marker-alt me-2"></i> Address
+                    </h5>
+                    <p>
+                        18002 Lipoma Firs E. Unit H105<br>
+                        Puyallup, WA
+                    </p>
+                </div>
+            </div>
+
+            <hr class="my-5">
+
+            <h4 class="mb-4">Send Me a Message</h4>
+            <form method="post">
+                <div class="mb-3">
+                    <label for="name" class="form-label">Name</label>
+                    <input type="text" class="form-control" id="name" name="name" required>
+                </div>
+                <div class="mb-3">
+                    <label for="email" class="form-label">Email</label>
+                    <input type="email" class="form-control" id="email" name="email" required>
+                </div>
+                <div class="mb-3">
+                    <label for="subject" class="form-label">Subject</label>
+                    <input type="text" class="form-control" id="subject" name="subject" required>
+                </div>
+                <div class="mb-3">
+                    <label for="message" class="form-label">Message</label>
+                    <textarea class="form-control" id="message" name="message" rows="5" required></textarea>
+                </div>
+                <button type="submit" class="btn btn-primary">Send Message</button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<style>
+    .contact-item h5 {
+        color: #333;
+        font-weight: 600;
+    }
+    .contact-item a {
+        color: #007bff;
+    }
+    .contact-item a:hover {
+        color: #0056b3;
+    }
+</style>
