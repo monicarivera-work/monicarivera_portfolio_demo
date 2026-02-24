@@ -22,7 +22,7 @@ namespace PortfolioDemo.Pages.Shared.Helpers
             //Get file client
             ShareFileClient fileClient = directoryClient.GetFileClient(filePath);
 
-            if(!await fileClient.ExistsAsync())
+            if (!await fileClient.ExistsAsync())
             {
                 throw new FileNotFoundException($"File '{filePath}' not found in share '{shareName}'.");
             }
@@ -34,5 +34,6 @@ namespace PortfolioDemo.Pages.Shared.Helpers
                 await download.Content.CopyToAsync(ms);
                 return ms.ToArray();
             }
+        }
     }
 }
