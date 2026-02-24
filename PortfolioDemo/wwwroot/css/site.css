@@ -19,29 +19,30 @@ body {
 .btn-link.nav-link:focus, 
 .form-control:focus, 
 .form-check-input:focus {
-  box-shadow: 0 0 0 0.1rem white, 0 0 0 0.25rem #8b5cf6;
+  box-shadow: 0 0 0 0.1rem white, 0 0 0 0.25rem #d4b5e8;
 }
 
-/* Scrollbar styling */
+/* Scrollbar styling - Spring Pastels */
 ::-webkit-scrollbar {
   width: 10px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #f1f5f9;
+  background: #f5f3ff;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: linear-gradient(180deg, #8b5cf6, #ec4899);
+  background: linear-gradient(180deg, #d4b5e8, #f5c9d4, #c8e6c9);
   border-radius: 10px;
+  box-shadow: 0 0 10px rgba(212, 181, 232, 0.3);
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: linear-gradient(180deg, #7c3aed, #db2777);
+  background: linear-gradient(180deg, #c9a5dd, #f0b8c8, #b3d9b4);
 }
 
 /* Selection color */
 ::selection {
-  background: linear-gradient(135deg, #8b5cf6, #ec4899);
-  color: white;
+  background: linear-gradient(135deg, #d4b5e8, #f5c9d4);
+  color: var(--text-dark);
 }
