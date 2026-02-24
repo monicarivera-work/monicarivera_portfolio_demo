@@ -1,9 +1,7 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Primitives;
+using Microsoft.AspNetCore.Mvc;
 using PortfolioDemo.Pages.Shared.Helpers;
-using System.Runtime.CompilerServices;
 
-namespace PortfolioDemo.Pages
+namespace PortfolioDemo.Controllers
 {
     public class FileController : Controller
     {
