@@ -1,6 +1,8 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 
+namespace PortfolioDemo.Pages;
+
 public class ContactModel : PageModel
 {
     [BindProperty]
@@ -22,8 +24,6 @@ public class ContactModel : PageModel
             return Page();
         }
 
-        // TODO: Implement email sending or save to database
-        // For now, just redirect back with success message
         TempData["SuccessMessage"] = $"Thank you {Name}! Your message has been received.";
         return RedirectToPage();
     }
