@@ -1,0 +1,68 @@
+@page
+@model ContactModel
+@{
+    ViewData["Title"] = "Contact";
+}
+
+<section class="content-section">
+    <div class="container">
+        <div class="section-header">
+            <h2>Get in Touch</h2>
+        </div>
+        
+        <div class="row">
+            <div class="col-md-6">
+                <div class="contact-form">
+                    <form method="post">
+                        <div class="form-group">
+                            <label for="name" class="form-label">Your Name</label>
+                            <input type="text" class="form-control" id="name" name="name" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="email" class="form-label">Email Address</label>
+                            <input type="email" class="form-control" id="email" name="email" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="subject" class="form-label">Subject</label>
+                            <input type="text" class="form-control" id="subject" name="subject" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="message" class="form-label">Message</label>
+                            <textarea class="form-control" id="message" name="message" rows="5" required></textarea>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary-flowery" style="width: 100%;">Send Message</button>
+                    </form>
+                </div>
+            </div>
+
+            <div class="col-md-6">
+                <div class="card-flowery">
+                    <h3><i class="fas fa-phone"></i> Contact Information</h3>
+                    <div style="margin-bottom: 2rem; padding-bottom: 1.5rem; border-bottom: 2px solid var(--primary-pink);">
+                        <p style="color: var(--accent-green); font-weight: 700; margin-bottom: 0.25rem;">Email</p>
+                        <a href="mailto:monica.rivera4@outlook.com" style="color: var(--dark-text); text-decoration: none;">monica.rivera4@outlook.com</a>
+                    </div>
+                    <div style="margin-bottom: 2rem; padding-bottom: 1.5rem; border-bottom: 2px solid var(--primary-pink);">
+                        <p style="color: var(--accent-green); font-weight: 700; margin-bottom: 0.25rem;">Phone</p>
+                        <a href="tel:5712014599" style="color: var(--dark-text); text-decoration: none;">571-201-4599</a>
+                    </div>
+                    <div style="margin-bottom: 2rem;">
+                        <p style="color: var(--accent-green); font-weight: 700; margin-bottom: 0.25rem;">Location</p>
+                        <p style="color: var(--dark-text);">Puyallup, WA</p>
+                    </div>
+
+                    <h4 style="color: var(--accent-pink); margin-top: 2rem; margin-bottom: 1rem;">Connect With Me</h4>
+                    <div style="display: flex; gap: 1rem;">
+                        <a href="https://linkedin.com" target="_blank" class="social-link"><i class="fab fa-linkedin"></i></a>
+                        <a href="https://github.com" target="_blank" class="social-link"><i class="fab fa-github"></i></a>
+                        <a href="mailto:monica.rivera4@outlook.com" class="social-link"><i class="fas fa-envelope"></i></a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>

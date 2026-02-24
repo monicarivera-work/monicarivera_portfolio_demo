@@ -14,7 +14,7 @@ namespace PortfolioDemo.Pages
 
         public void OnGet()
         {
-
+            // Home page load logic
         }
     }
 }
