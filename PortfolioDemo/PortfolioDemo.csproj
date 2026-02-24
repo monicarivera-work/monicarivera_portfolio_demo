@@ -16,4 +16,8 @@
     <ContainerPort Include="8081" />
   </ItemGroup>
 
+  <ItemGroup>
+    <PackageReference Include="Azure.Storage.Files.Shares" Version="12.25.0" />
+  </ItemGroup>
+
 </Project>
