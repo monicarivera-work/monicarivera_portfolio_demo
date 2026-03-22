@@ -1,0 +1,86 @@
+# Deploys infra/apim.bicep to Azure API Management using Bicep + ARM deploy.
+#
+# Required repository secrets (Settings → Secrets and variables → Actions):
+#   AZURE_CREDENTIALS        – JSON output from `az ad sp create-for-rbac --json-auth`
+#   AZURE_RG                 – Name of the Azure resource group to deploy into
+#                              (e.g. "monicarivera-portfolio-rg"). Must be set before
+#                              this workflow will succeed.
+#   APIM_PUBLISHER_EMAIL     – Owner email address for the APIM instance
+#   APIM_PUBLISHER_NAME      – Owner display name for the APIM instance
+
+name: Deploy Azure API Management (Bicep)
+
+on:
+  # Trigger automatically only when the Bicep template itself changes on main,
+  # to avoid unnecessary APIM deployments on every push.
+  push:
+    branches:
+      - main
+    paths:
+      - 'infra/apim.bicep'
+
+  # Also allow ad-hoc manual deploys from the GitHub Actions UI.
+  workflow_dispatch:
+
+# Least-privilege permissions: this workflow only needs to read repo contents
+# (for checkout) and write nothing back to the repository.
+permissions:
+  contents: read
+
+jobs:
+  deploy-apim:
+    name: Deploy APIM Bicep template
+    runs-on: ubuntu-latest
+
+    steps:
+      # ── 1. Check out the repository so the Bicep file is available ──────────
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # ── 2. Log in to Azure using the service-principal credentials stored
+      #        in the AZURE_CREDENTIALS secret.
+      #        Generate credentials with:
+      #          az ad sp create-for-rbac \
+      #            --name "portfolio-github-deploy" \
+      #            --role Contributor \
+      #            --scopes /subscriptions/<sub-id>/resourceGroups/<rg> \
+      #            --json-auth
+      #        Note: --sdk-auth is deprecated; use --json-auth in newer Azure CLI
+      #        versions. Both produce the same JSON blob format.
+      #        Paste the full JSON output as the AZURE_CREDENTIALS secret.
+      - name: Log in to Azure
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      # ── 3. Deploy the Bicep template to the target resource group ───────────
+      #        Parameter overrides:
+      #          sku=Consumption   → Consumption tier is serverless / pay-per-call,
+      #                              which keeps costs near $0 for a low-traffic
+      #                              portfolio demo (vs ~$50/mo for Developer tier).
+      #          skuCount=0        → Consumption tier requires a capacity of 0
+      #                              (scale units are managed automatically by Azure).
+      - name: Deploy infra/apim.bicep
+        uses: azure/arm-deploy@v2
+        with:
+          # Resource group name – set the AZURE_RG secret in repo settings.
+          resourceGroupName: ${{ secrets.AZURE_RG }}
+
+          # Path to the Bicep template (relative to the repo root).
+          template: infra/apim.bicep
+
+          # Required publisher parameters pulled from repository secrets.
+          # Optional overrides use Consumption SKU to minimize cost for a demo.
+          parameters: >-
+            publisherEmail=${{ secrets.APIM_PUBLISHER_EMAIL }}
+            publisherName="${{ secrets.APIM_PUBLISHER_NAME }}"
+            sku=Consumption
+            skuCount=0
+
+          # Give each deployment a unique name so it is easy to identify in the
+          # Azure portal deployment history.
+          deploymentName: deploy-apim-${{ github.run_number }}
+
+          # Fail the workflow immediately if validation errors are detected
+          # before any resources are created/modified.
+          failOnStdErr: true
