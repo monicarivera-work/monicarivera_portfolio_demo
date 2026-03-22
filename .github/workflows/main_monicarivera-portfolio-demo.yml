@@ -71,6 +71,8 @@ jobs:
   deploy:
     runs-on: windows-latest
     needs: build
+    env:
+      APPLICATIONINSIGHTS_CONNECTION_STRING: ${{ secrets.APPLICATIONINSIGHTS_CONNECTION_STRING }}
     if: github.event_name != 'pull_request'
     environment:
       name: Production
