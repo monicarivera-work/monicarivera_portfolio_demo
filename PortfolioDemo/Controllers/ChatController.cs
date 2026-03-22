@@ -86,7 +86,7 @@ Software Engineer II at Microsoft with deep expertise in cloud-based and distrib
 - Highlight Monica's strengths naturally and positively
 - When describing Monica as a person, draw on the ""Who Is Monica?"" section to give genuine, vivid answers
 - If asked about salary expectations, visa requirements, or specific availability dates, encourage reaching out to Monica directly
-- Encourage recruiters to contact Monica at Monica.rivera4@outlook.com for detailed discussions
+- Encourage recruiters to contact Monica at {0} for detailed discussions
 - Do not make up information not provided above
 - Always speak positively and accurately about Monica's experience
 - Feel free to use light, friendly emoji to keep the tone engaging 🌸";
@@ -105,13 +105,15 @@ Software Engineer II at Microsoft with deep expertise in cloud-based and distrib
                 return BadRequest(new { error = "Message is required." });
 
             var apiKey = _configuration[Constants.AnthropicApiKeyName];
+            var contactEmail = _configuration[Constants.EmailAddressKey] ?? string.Empty;
+            var systemPrompt = string.Format(SystemPromptTemplate, contactEmail);
 
             if (string.IsNullOrEmpty(apiKey))
             {
-                return Ok(new
-                {
-                    reply = "Monica's AI assistant isn't fully configured yet — but I know she'd love to chat! Reach out directly at Monica.rivera4@outlook.com 💌"
-                });
+                var fallbackReply = string.IsNullOrWhiteSpace(contactEmail)
+                    ? "Monica's AI assistant isn't fully configured yet — but I know she'd love to chat! 💌"
+                    : $"Monica's AI assistant isn't fully configured yet — but I know she'd love to chat! Reach out directly at {contactEmail} 💌";
+                return Ok(new { reply = fallbackReply });
             }
 
             try
@@ -147,7 +149,7 @@ Software Engineer II at Microsoft with deep expertise in cloud-based and distrib
                 {
                     model = ClaudeModel,
                     max_tokens = 512,
-                    system = SystemPrompt,
+                    system = systemPrompt,
                     messages
                 };
 
@@ -164,7 +166,10 @@ Software Engineer II at Microsoft with deep expertise in cloud-based and distrib
                 {
                     var errorBody = await response.Content.ReadAsStringAsync();
                     _logger.LogError("Anthropic API returned {StatusCode}: {ErrorBody}", response.StatusCode, errorBody);
-                    return Ok(new { reply = "I'm having a little trouble right now 🌸 Please reach out to Monica directly at Monica.rivera4@outlook.com!" });
+                    var errorReply = string.IsNullOrWhiteSpace(contactEmail)
+                        ? "I'm having a little trouble right now 🌸 Please reach out to Monica directly!"
+                        : $"I'm having a little trouble right now 🌸 Please reach out to Monica directly at {contactEmail}!";
+                    return Ok(new { reply = errorReply });
                 }
 
                 var responseContent = await response.Content.ReadAsStringAsync();
@@ -179,7 +184,10 @@ Software Engineer II at Microsoft with deep expertise in cloud-based and distrib
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error calling Anthropic API");
-                return Ok(new { reply = "Oops, something went wrong on my end 🌸 Please reach out to Monica directly at Monica.rivera4@outlook.com!" });
+                var catchReply = string.IsNullOrWhiteSpace(contactEmail)
+                    ? "Oops, something went wrong on my end 🌸 Please reach out to Monica directly!"
+                    : $"Oops, something went wrong on my end 🌸 Please reach out to Monica directly at {contactEmail}!";
+                return Ok(new { reply = catchReply });
             }
         }
     }
