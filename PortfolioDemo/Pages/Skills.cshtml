@@ -2,6 +2,7 @@
 @model SkillsModel
 @{
     ViewData["Title"] = "Skills";
+    ViewData["Description"] = "Technical skills, frameworks, cloud tools, and certifications of Monica Rivera.";
 }
 
 <div class="container py-5">
@@ -10,7 +11,7 @@
             <h1 class="mb-5">@ViewData["Title"]</h1>
 
             <div class="skills-section mb-5">
-                <h4 class="mb-4">Programming Languages</h4>
+                <h2 class="h4 mb-4">Programming Languages</h2>
                 <div class="skill-tags">
                     <span class="badge bg-primary">C#</span>
                     <span class="badge bg-primary">C++</span>
@@ -27,7 +28,7 @@
             </div>
 
             <div class="skills-section mb-5">
-                <h4 class="mb-4">Frameworks & Tools</h4>
+                <h2 class="h4 mb-4">Frameworks &amp; Tools</h2>
                 <div class="skill-tags">
                     <span class="badge bg-info">.NET</span>
                     <span class="badge bg-info">ASP.NET Core</span>
@@ -47,7 +48,7 @@
             </div>
 
             <div class="skills-section mb-5">
-                <h4 class="mb-4">Cloud & DevOps</h4>
+                <h2 class="h4 mb-4">Cloud &amp; DevOps</h2>
                 <div class="skill-tags">
                     <span class="badge bg-success">Azure Expert</span>
                     <span class="badge bg-success">Infrastructure-as-Code</span>
@@ -58,7 +59,7 @@
             </div>
 
             <div class="skills-section">
-                <h4 class="mb-4">Testing & Automation</h4>
+                <h2 class="h4 mb-4">Testing &amp; Automation</h2>
                 <div class="skill-tags">
                     <span class="badge bg-warning text-dark">Automated Regression Testing</span>
                     <span class="badge bg-warning text-dark">GUI Testing</span>
@@ -70,7 +71,7 @@
             </div>
 
             <div class="skills-section">
-                <h4 class="mb-4">Monica's Resume</h4>
+                <h2 class="h4 mb-4">Monica's Resume</h2>
                 <div class="skill-tags">
                     <span class="badge bg-warning text-dark">
                         <a href="/file/download?fileName=MonicaLeighRiveraResume.docx">Download Docx</a>
@@ -84,15 +85,3 @@
         </div>
     </div>
 </div>
-
-<style>
-    .skill-tags {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 0.5rem;
-    }
-    .badge {
-        font-size: 0.95rem;
-        padding: 0.5rem 1rem;
-    }
-</style>
