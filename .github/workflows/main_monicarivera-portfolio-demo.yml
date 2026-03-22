@@ -74,6 +74,8 @@ jobs:
     if: github.event_name != 'pull_request'
     environment:
       name: Production
+    env:
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
 
     steps:
       - name: Download artifact from build job

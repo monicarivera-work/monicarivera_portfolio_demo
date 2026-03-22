@@ -1,8 +1,14 @@
+using Anthropic.SDK;
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddRazorPages();
 builder.Services.AddControllers();
+builder.Services.AddHttpClient();
+builder.Services.AddSingleton<AnthropicClient>(sp =>
+    new AnthropicClient(builder.Configuration["ANTHROPIC_API_KEY"] ?? Environment.GetEnvironmentVariable("ANTHROPIC_API_KEY") ?? ""));
+builder.Services.AddMemoryCache();
 
 var app = builder.Build();
 
