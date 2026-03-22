@@ -1,3 +1,25 @@
+/* CSS Custom Properties (design tokens) */
+:root {
+  --color-primary: #6c5ce7;
+  --color-secondary: #fd79a8;
+  --color-accent: #00b894;
+  --color-text: #2d3436;
+  --color-bg: #ffffff;
+  --color-surface: #f8f9fa;
+  --font-heading: 'Playfair Display', 'Segoe UI', system-ui, sans-serif;
+  --font-body: 'Lato', 'Segoe UI', system-ui, sans-serif;
+  --spacing-section: 5rem;
+  --border-radius-card: 0.75rem;
+  --shadow-card: 0 4px 24px rgba(108, 92, 231, 0.08);
+}
+
+/* Dark mode variables */
+body.dark-mode {
+  --color-text: #f0f0f0;
+  --color-bg: #1a1a2e;
+  --color-surface: #16213e;
+}
+
 html {
   font-size: 14px;
   position: relative;
@@ -14,12 +36,90 @@ body {
   margin-bottom: 60px;
 }
 
-.btn:focus, 
-.btn:active:focus, 
-.btn-link.nav-link:focus, 
-.form-control:focus, 
+/* Skip-to-content link for accessibility */
+.skip-link {
+  position: absolute;
+  top: -100%;
+  left: 1rem;
+  padding: 0.5rem 1rem;
+  background: var(--color-primary);
+  color: white;
+  border-radius: 0 0 0.5rem 0.5rem;
+  z-index: 9999;
+  transition: top 0.2s;
+  text-decoration: none;
+}
+
+.skip-link:focus {
+  top: 0;
+}
+
+/* Focus-visible styles for keyboard navigation */
+:focus-visible {
+  outline: 3px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+.btn:focus,
+.btn:active:focus,
+.btn-link.nav-link:focus,
+.form-control:focus,
 .form-check-input:focus {
   box-shadow: 0 0 0 0.1rem white, 0 0 0 0.25rem #d4b5e8;
+}
+
+/* Dark mode toggle button */
+.dark-mode-btn {
+  background: transparent;
+  border: 1px solid rgba(90, 90, 110, 0.3);
+  border-radius: 50%;
+  width: 2rem;
+  height: 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  color: var(--color-text, #5a5a6e);
+  transition: background 0.2s, color 0.2s;
+}
+
+.dark-mode-btn:hover {
+  background: rgba(212, 181, 232, 0.3);
+}
+
+/* Moved from Skills.cshtml inline styles */
+.skill-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.badge {
+  font-size: 0.95rem;
+  padding: 0.5rem 1rem;
+}
+
+/* Responsive: hero section and cards stack on mobile */
+@media (max-width: 768px) {
+  .hero-section {
+    padding: 40px 1rem;
+    text-align: center;
+  }
+
+  .hero-buttons {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .card-flowery {
+    margin-bottom: 1.5rem;
+  }
+
+  .experience-item {
+    margin-bottom: 1.5rem;
+  }
 }
 
 /* Scrollbar styling - Spring Pastels */

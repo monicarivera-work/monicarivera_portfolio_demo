@@ -2,6 +2,7 @@
 @model ContactModel
 @{
     ViewData["Title"] = "Contact";
+    ViewData["Description"] = "Get in touch with Monica Rivera via email or the contact form.";
 }
 
 <div class="container py-5">
@@ -11,9 +12,9 @@
 
             <div class="contact-info mb-5">
                 <div class="contact-item mb-4">
-                    <h5 class="mb-2">
+                    <h2 class="h5 mb-2">
                         <i class="fas fa-envelope me-2"></i> Email
-                    </h5>
+                    </h2>
                     <p>
                         <a href="mailto:Monica.rivera4@outlook.com" class="text-decoration-none">
                             Monica.rivera4@outlook.com
@@ -24,39 +25,26 @@
 
             <hr class="my-5">
 
-            <h4 class="mb-4">Send Me a Message</h4>
+            <h2 class="h4 mb-4">Send Me a Message</h2>
             <form method="post">
                 <div class="mb-3">
                     <label for="name" class="form-label">Name</label>
-                    <input type="text" class="form-control" id="name" name="name" required>
+                    <input type="text" class="form-control" id="name" name="name" required aria-required="true" autocomplete="name">
                 </div>
                 <div class="mb-3">
                     <label for="email" class="form-label">Email</label>
-                    <input type="email" class="form-control" id="email" name="email" required>
+                    <input type="email" class="form-control" id="email" name="email" required aria-required="true" autocomplete="email">
                 </div>
                 <div class="mb-3">
                     <label for="subject" class="form-label">Subject</label>
-                    <input type="text" class="form-control" id="subject" name="subject" required>
+                    <input type="text" class="form-control" id="subject" name="subject" required aria-required="true">
                 </div>
                 <div class="mb-3">
                     <label for="message" class="form-label">Message</label>
-                    <textarea class="form-control" id="message" name="message" rows="5" required></textarea>
+                    <textarea class="form-control" id="message" name="message" rows="5" required aria-required="true"></textarea>
                 </div>
                 <button type="submit" class="btn btn-primary">Send Message</button>
             </form>
         </div>
     </div>
 </div>
-
-<style>
-    .contact-item h5 {
-        color: #333;
-        font-weight: 600;
-    }
-    .contact-item a {
-        color: #007bff;
-    }
-    .contact-item a:hover {
-        color: #0056b3;
-    }
-</style>
