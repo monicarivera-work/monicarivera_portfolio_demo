@@ -106,7 +106,7 @@ Software Engineer II at Microsoft with deep expertise in cloud-based and distrib
 
             var apiKey = _configuration[Constants.AnthropicApiKeyName];
             var contactEmail = _configuration[Constants.EmailAddressKey] ?? string.Empty;
-            var systemPrompt = string.Format(SystemPromptTemplate, contactEmail);
+            var systemPrompt = string.Format(SystemPrompt, contactEmail);
 
             if (string.IsNullOrEmpty(apiKey))
             {
