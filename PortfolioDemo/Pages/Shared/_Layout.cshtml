@@ -1,4 +1,5 @@
 ﻿<!DOCTYPE html>
+@inject Microsoft.Extensions.Configuration.IConfiguration Configuration
 <html lang="en">
 <head>
     <meta charset="utf-8" />
@@ -8,6 +9,10 @@
     <link rel="stylesheet" href="~/css/flowery-portfolio.css" />
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Lato:wght@300;400;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    <!-- Azure Application Insights - Client-side telemetry -->
+    <script type="text/javascript">
+    !(function (cfg){function onInit(){var e=function(c){return function(){var r=arguments;onInit._q.push([c,r])}},n=["Event","PageView","PageViewPerformance","Exception","Trace","DependencyData","Metric","addTelemetryInitializer","clearAuthenticatedUserContext","flush","setAuthenticatedUserContext","startTrackEvent","startTrackPage","stopTrackEvent","stopTrackPage","trackDependencyData","trackEvent","trackException","trackMetric","trackPageView","trackPageViewPerformance","trackTrace"];for(var i=0;i<n.length;i++)onInit[n[i]]=e(n[i]);return onInit}var ld=0,leaveUndefined,win=window,doc=document,scipt="script",src=cfg.src||"https://js.monitor.azure.com/scripts/b/ai.3.gbl.min.js",javaScript,onInit=win[cfg.name]||"appInsights";if(typeof onInit !== typeof leaveUndefined){onInit=win[cfg.name]=onInit}else{onInit=win[cfg.name]={};onInit._q=[]}cfg.ld=ld;cfg.ld<0&&(cfg.ld=0);setTimeout(function(){if(!win[cfg.name]||win[cfg.name]._q){javaScript=doc.createElement(scipt);javaScript.src=src;javaScript.onload=function(){onInit=win[cfg.name]};doc.getElementsByTagName(scipt)[0].parentNode.insertBefore(javaScript,doc.getElementsByTagName(scipt)[0])}},cfg.ld);window.appInsights=onInit})({"name":"appInsights","src":"https://js.monitor.azure.com/scripts/b/ai.3.gbl.min.js","cfg":{"connectionString":"@(Configuration["ApplicationInsights:ConnectionString"] ?? "")","enableAutoRouteTracking":true}});
+    </script>
 </head>
 <body>
     <!-- Navigation -->
