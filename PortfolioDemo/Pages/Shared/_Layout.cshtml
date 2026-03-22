@@ -1,24 +1,46 @@
 ﻿<!DOCTYPE html>
+@inject Microsoft.Extensions.Configuration.IConfiguration Configuration
 <html lang="en">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>@ViewData["Title"] - Monica Rivera Portfolio</title>
+    <title>@ViewData["Title"] | Monica Rivera</title>
+    @if (ViewData["Description"] != null)
+    {
+        <meta name="description" content="@ViewData["Description"]" />
+    }
+    <!-- Open Graph -->
+    <meta property="og:title" content="@ViewData["Title"] | Monica Rivera" />
+    <meta property="og:description" content="@(ViewData["Description"] ?? "Monica Rivera — Software Engineer, Cloud Expert, and Technical Leader.")" />
+    <meta property="og:type" content="website" />
+    <!-- canonical: add per-page via ViewData, e.g. <link rel="canonical" href="@ViewData["CanonicalUrl"]" /> -->
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
     <link rel="stylesheet" href="~/css/flowery-portfolio.css" />
+    <link rel="stylesheet" href="~/css/site.css" />
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Lato:wght@300;400;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    <!-- Azure Application Insights - Client-side telemetry -->
+    <script type="text/javascript">
+    !(function (cfg){function onInit(){var e=function(c){return function(){var r=arguments;onInit._q.push([c,r])}},n=["Event","PageView","PageViewPerformance","Exception","Trace","DependencyData","Metric","addTelemetryInitializer","clearAuthenticatedUserContext","flush","setAuthenticatedUserContext","startTrackEvent","startTrackPage","stopTrackEvent","stopTrackPage","trackDependencyData","trackEvent","trackException","trackMetric","trackPageView","trackPageViewPerformance","trackTrace"];for(var i=0;i<n.length;i++)onInit[n[i]]=e(n[i]);return onInit}var ld=0,leaveUndefined,win=window,doc=document,scipt="script",src=cfg.src||"https://js.monitor.azure.com/scripts/b/ai.3.gbl.min.js",javaScript,onInit=win[cfg.name]||"appInsights";if(typeof onInit !== typeof leaveUndefined){onInit=win[cfg.name]=onInit}else{onInit=win[cfg.name]={};onInit._q=[]}cfg.ld=ld;cfg.ld<0&&(cfg.ld=0);setTimeout(function(){if(!win[cfg.name]||win[cfg.name]._q){javaScript=doc.createElement(scipt);javaScript.src=src;javaScript.onload=function(){onInit=win[cfg.name]};doc.getElementsByTagName(scipt)[0].parentNode.insertBefore(javaScript,doc.getElementsByTagName(scipt)[0])}},cfg.ld);window.appInsights=onInit})({"name":"appInsights","src":"https://js.monitor.azure.com/scripts/b/ai.3.gbl.min.js","cfg":{"connectionString":"@(Configuration["ApplicationInsights:ConnectionString"] ?? "")","enableAutoRouteTracking":true}});
+    </script>
 </head>
 <body>
+    <a class="skip-link" href="#main-content">Skip to main content</a>
+
     <!-- Navigation -->
-    <nav class="navbar navbar-expand-lg navbar-light sticky-top">
+    <nav class="navbar navbar-expand-lg navbar-light sticky-top" aria-label="Primary navigation">
         <div class="container">
             <a class="navbar-brand" href="/">
                 <i class="fas fa-flower"></i> <span>Monica Rivera</span>
             </a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
-                <span class="navbar-toggler-icon"></span>
-            </button>
+            <div class="d-flex align-items-center gap-2 ms-auto">
+                <button id="darkModeToggle" class="btn btn-sm dark-mode-btn" aria-label="Toggle dark mode" title="Toggle dark mode">
+                    <i class="fas fa-moon"></i>
+                </button>
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+            </div>
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav ms-auto">
                     <li class="nav-item">
@@ -45,12 +67,12 @@
     </nav>
 
     <!-- Main Content -->
-    <main role="main">
+    <main role="main" id="main-content">
         @RenderBody()
     </main>
 
     <!-- Footer -->
-    <footer class="footer-section">
+    <footer class="footer-section" aria-label="Site footer">
         <div class="container">
             <div class="row align-items-center">
                 <div class="col-md-6">
@@ -66,5 +88,6 @@
     </footer>
 
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="~/js/site.js"></script>
 </body>
 </html>
