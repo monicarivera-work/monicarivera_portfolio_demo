@@ -16,6 +16,7 @@ namespace PortfolioDemo.Controllers
         private const string AnthropicApiUrl = "https://api.anthropic.com/v1/messages";
         private const string AnthropicVersion = "2023-06-01";
         private const string ClaudeModel = "claude-opus-4-5";
+        private const int MaxHistoryMessages = 10;
 
         private const string SystemPrompt = @"You are Monica Rivera's friendly and knowledgeable AI assistant on her portfolio website. Your job is to help recruiters and hiring managers learn about Monica quickly and enthusiastically.
 
@@ -100,13 +101,30 @@ Software Engineer with extensive experience in cloud-based and distributed syste
 
             try
             {
-                var messages = new List<object>();
-
-                foreach (var msg in request.History.TakeLast(10))
+                // Build a strictly alternating user/assistant message sequence required by Anthropic API.
+                // History messages must start with "user" and alternate roles without consecutive duplicates.
+                var processedHistory = new List<(string Role, string Content)>();
+                foreach (var msg in request.History.TakeLast(MaxHistoryMessages))
                 {
-                    if (!string.IsNullOrWhiteSpace(msg.Role) && !string.IsNullOrWhiteSpace(msg.Content))
-                        messages.Add(new { role = msg.Role, content = msg.Content });
+                    if (string.IsNullOrWhiteSpace(msg.Role) || string.IsNullOrWhiteSpace(msg.Content))
+                        continue;
+                    if (msg.Role != "user" && msg.Role != "assistant")
+                        continue;
+                    if (processedHistory.Count == 0 && msg.Role != "user")
+                        continue; // First message must be "user"
+                    if (processedHistory.Count > 0 && processedHistory[^1].Role == msg.Role)
+                        continue; // Skip consecutive same-role messages
+                    processedHistory.Add((msg.Role, msg.Content));
                 }
+
+                // Ensure the history ends with "assistant" so the new "user" message doesn't create consecutive user entries
+                int lastAssistantIndex = processedHistory.FindLastIndex(h => h.Role == "assistant");
+                if (lastAssistantIndex < processedHistory.Count - 1)
+                    processedHistory.RemoveRange(lastAssistantIndex + 1, processedHistory.Count - lastAssistantIndex - 1);
+
+                var messages = processedHistory
+                    .Select(h => (object)new { role = h.Role, content = h.Content })
+                    .ToList();
 
                 messages.Add(new { role = "user", content = request.Message });
 
@@ -129,7 +147,8 @@ Software Engineer with extensive experience in cloud-based and distributed syste
 
                 if (!response.IsSuccessStatusCode)
                 {
-                    _logger.LogError("Anthropic API returned {StatusCode}", response.StatusCode);
+                    var errorBody = await response.Content.ReadAsStringAsync();
+                    _logger.LogError("Anthropic API returned {StatusCode}: {ErrorBody}", response.StatusCode, errorBody);
                     return Ok(new { reply = "I'm having a little trouble right now 🌸 Please reach out to Monica directly at Monica.rivera4@outlook.com!" });
                 }
 
