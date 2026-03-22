@@ -10,23 +10,41 @@
         <div class="col-lg-8 mx-auto">
             <h1 class="mb-5">@ViewData["Title"]</h1>
 
-            <div class="contact-info mb-5">
-                <div class="contact-item mb-4">
-                    <h2 class="h5 mb-2">
-                        <i class="fas fa-envelope me-2"></i> Email
-                    </h2>
-                    <p>
-                        <a href="mailto:Monica.rivera4@outlook.com" class="text-decoration-none">
-                            Monica.rivera4@outlook.com
-                        </a>
-                    </p>
+            @if (!string.IsNullOrWhiteSpace(Model.ContactEmail))
+            {
+                <div class="contact-info mb-5">
+                    <div class="contact-item mb-4">
+                        <h2 class="h5 mb-2">
+                            <i class="fas fa-envelope me-2"></i> Email
+                        </h2>
+                        <p>
+                            <a href="mailto:@Model.ContactEmail" class="text-decoration-none">
+                                @Model.ContactEmail
+                            </a>
+                        </p>
+                    </div>
                 </div>
-            </div>
 
-            <hr class="my-5">
+                <hr class="my-5">
+            }
 
             <h2 class="h4 mb-4">Send Me a Message</h2>
+
+            @if (Model.MessageSent == true)
+            {
+                <div class="alert alert-success" role="alert">
+                    Your message was sent successfully! I'll get back to you soon.
+                </div>
+            }
+            else if (Model.MessageSent == false)
+            {
+                <div class="alert alert-danger" role="alert">
+                    There was a problem sending your message. Please try again later.
+                </div>
+            }
+
             <form method="post">
+                @Html.AntiForgeryToken()
                 <div class="mb-3">
                     <label for="name" class="form-label">Name</label>
                     <input type="text" class="form-control" id="name" name="name" required aria-required="true" autocomplete="name">
@@ -48,3 +66,4 @@
         </div>
     </div>
 </div>
+
