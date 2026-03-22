@@ -17,6 +17,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="Anthropic.SDK" Version="5.10.0" />
     <PackageReference Include="Azure.Storage.Files.Shares" Version="12.25.0" />
   </ItemGroup>
 
