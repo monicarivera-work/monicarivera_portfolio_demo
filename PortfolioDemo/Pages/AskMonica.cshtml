@@ -1,0 +1,423 @@
+@page
+@model AskMonicaModel
+@{
+    ViewData["Title"] = "Ask Monica's AI";
+    ViewData["Description"] = "Chat with Monica Rivera's AI assistant, powered by Claude. Get instant answers about her skills, experience, and background.";
+}
+
+<style>
+    /* ── Chat Page Layout ── */
+    .chat-hero {
+        text-align: center;
+        padding: 3rem 1rem 1.5rem;
+    }
+
+    .chat-hero h1 {
+        font-size: 2.8rem;
+        margin-bottom: 0.75rem;
+    }
+
+    .chat-hero p {
+        color: var(--text-light, #8a8a9e);
+        font-size: 1.1rem;
+        max-width: 600px;
+        margin: 0 auto 0.5rem;
+    }
+
+    /* ── Suggested Questions ── */
+    .suggested-questions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.6rem;
+        justify-content: center;
+        margin-bottom: 1.5rem;
+    }
+
+    .suggested-q {
+        background: rgba(255, 255, 255, 0.7);
+        border: 2px solid rgba(212, 181, 232, 0.5);
+        border-radius: 50px;
+        padding: 6px 16px;
+        font-size: 0.88rem;
+        color: var(--text-dark, #5a5a6e);
+        cursor: pointer;
+        transition: all 0.25s ease;
+        font-family: 'Lato', sans-serif;
+        backdrop-filter: blur(6px);
+        box-shadow: 0 2px 8px rgba(212, 181, 232, 0.15);
+    }
+
+    .suggested-q:hover {
+        background: linear-gradient(135deg, rgba(212, 181, 232, 0.35), rgba(245, 201, 212, 0.35));
+        border-color: rgba(212, 181, 232, 0.8);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 15px rgba(212, 181, 232, 0.25);
+    }
+
+    /* ── Chat Window ── */
+    .chat-window {
+        background: rgba(255, 255, 255, 0.65);
+        backdrop-filter: blur(12px);
+        border: 2px solid rgba(212, 181, 232, 0.3);
+        border-radius: 20px;
+        padding: 1.5rem;
+        height: 420px;
+        overflow-y: auto;
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+        box-shadow: 0 8px 32px rgba(212, 181, 232, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.8);
+        scroll-behavior: smooth;
+    }
+
+    /* ── Message Bubbles ── */
+    .message {
+        display: flex;
+        flex-direction: column;
+        max-width: 78%;
+        animation: popIn 0.3s ease;
+    }
+
+    @@keyframes popIn {
+        from { opacity: 0; transform: translateY(10px) scale(0.97); }
+        to   { opacity: 1; transform: translateY(0)   scale(1);    }
+    }
+
+    .message.ai-message {
+        align-self: flex-start;
+        align-items: flex-start;
+    }
+
+    .message.user-message {
+        align-self: flex-end;
+        align-items: flex-end;
+    }
+
+    .message-bubble {
+        padding: 0.75rem 1.1rem;
+        border-radius: 18px;
+        font-size: 0.97rem;
+        line-height: 1.6;
+        white-space: pre-wrap;
+        word-break: break-word;
+    }
+
+    .ai-message .message-bubble {
+        background: linear-gradient(135deg, rgba(230, 213, 240, 0.85), rgba(250, 224, 230, 0.85));
+        border-bottom-left-radius: 4px;
+        color: var(--text-dark, #5a5a6e);
+        box-shadow: 0 2px 10px rgba(212, 181, 232, 0.2);
+    }
+
+    .user-message .message-bubble {
+        background: linear-gradient(135deg, rgba(200, 230, 201, 0.85), rgba(179, 229, 252, 0.85));
+        border-bottom-right-radius: 4px;
+        color: var(--text-dark, #5a5a6e);
+        box-shadow: 0 2px 10px rgba(200, 230, 201, 0.2);
+    }
+
+    .message-label {
+        font-size: 0.75rem;
+        color: var(--text-light, #8a8a9e);
+        margin-bottom: 3px;
+        font-weight: 600;
+        letter-spacing: 0.5px;
+    }
+
+    /* ── Typing Indicator ── */
+    .typing-dots {
+        display: flex;
+        gap: 5px;
+        padding: 0.6rem 1rem;
+    }
+
+    .typing-dots span {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: #d4b5e8;
+        animation: bounce 1.2s infinite;
+    }
+
+    .typing-dots span:nth-child(2) { animation-delay: 0.2s; }
+    .typing-dots span:nth-child(3) { animation-delay: 0.4s; }
+
+    @@keyframes bounce {
+        0%, 80%, 100% { transform: translateY(0); }
+        40%            { transform: translateY(-8px); }
+    }
+
+    /* ── Input Area ── */
+    .chat-input-area {
+        display: flex;
+        gap: 0.5rem;
+        margin-top: 1rem;
+    }
+
+    .chat-input-area .form-control {
+        border-radius: 50px;
+        padding: 0.65rem 1.2rem;
+        border: 2px solid rgba(212, 181, 232, 0.4);
+        background: rgba(255, 255, 255, 0.75);
+        font-size: 0.97rem;
+        transition: border-color 0.25s;
+    }
+
+    .chat-input-area .form-control:focus {
+        border-color: #d4b5e8;
+        box-shadow: 0 0 0 0.18rem rgba(212, 181, 232, 0.25);
+        background: rgba(255, 255, 255, 0.95);
+    }
+
+    .send-btn {
+        background: linear-gradient(135deg, #d4b5e8, #f5c9d4);
+        border: none;
+        border-radius: 50%;
+        width: 48px;
+        height: 48px;
+        flex-shrink: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--text-dark, #5a5a6e);
+        font-size: 1rem;
+        cursor: pointer;
+        transition: all 0.25s ease;
+        box-shadow: 0 4px 15px rgba(212, 181, 232, 0.3);
+    }
+
+    .send-btn:hover {
+        transform: scale(1.08);
+        box-shadow: 0 6px 20px rgba(212, 181, 232, 0.45);
+    }
+
+    .send-btn:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+        transform: none;
+    }
+
+    /* ── Disclaimer ── */
+    .chat-disclaimer {
+        text-align: center;
+        font-size: 0.78rem;
+        color: var(--text-light, #8a8a9e);
+        margin-top: 0.75rem;
+    }
+
+    /* ── Powered-by badge ── */
+    .powered-by {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        background: rgba(255, 255, 255, 0.6);
+        border: 1px solid rgba(212, 181, 232, 0.3);
+        border-radius: 50px;
+        padding: 4px 14px;
+        font-size: 0.8rem;
+        color: var(--text-light, #8a8a9e);
+        margin-bottom: 1.2rem;
+    }
+
+    /* ── Dark mode ── */
+    body.dark-mode .chat-window {
+        background: rgba(22, 33, 62, 0.75);
+        border-color: rgba(212, 181, 232, 0.2);
+    }
+
+    body.dark-mode .ai-message .message-bubble {
+        background: linear-gradient(135deg, rgba(90, 60, 120, 0.7), rgba(120, 60, 90, 0.7));
+        color: #e8e0f0;
+    }
+
+    body.dark-mode .user-message .message-bubble {
+        background: linear-gradient(135deg, rgba(40, 100, 60, 0.7), rgba(40, 80, 120, 0.7));
+        color: #e0f0e8;
+    }
+
+    body.dark-mode .suggested-q {
+        background: rgba(40, 30, 60, 0.7);
+        color: #e0d0f0;
+        border-color: rgba(212, 181, 232, 0.3);
+    }
+
+    body.dark-mode .chat-input-area .form-control {
+        background: rgba(22, 33, 62, 0.8);
+        color: #e0d0f0;
+        border-color: rgba(212, 181, 232, 0.3);
+    }
+</style>
+
+<div class="container">
+    <!-- Hero -->
+    <div class="chat-hero">
+        <h1>✨ Ask Monica's AI</h1>
+        <p>Curious about Monica's background, skills, or experience? Ask anything — powered by Claude AI.</p>
+        <div class="text-center">
+            <span class="powered-by">
+                <i class="fas fa-robot"></i> Powered by Claude
+            </span>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8 mx-auto">
+
+            <!-- Suggested Questions -->
+            <div class="suggested-questions" id="suggestedQuestions" aria-label="Suggested questions">
+                <button class="suggested-q" onclick="askSuggested(this)">What is Monica's Azure experience?</button>
+                <button class="suggested-q" onclick="askSuggested(this)">Has Monica worked on AI projects?</button>
+                <button class="suggested-q" onclick="askSuggested(this)">What makes Monica stand out?</button>
+                <button class="suggested-q" onclick="askSuggested(this)">Can Monica lead a team?</button>
+                <button class="suggested-q" onclick="askSuggested(this)">What are Monica's strongest skills?</button>
+            </div>
+
+            <!-- Chat Window -->
+            <div class="chat-window" id="chatWindow" role="log" aria-live="polite" aria-label="Chat messages">
+                <div class="message ai-message">
+                    <span class="message-label">Monica's AI ✨</span>
+                    <div class="message-bubble">
+                        Hi there! 👋 I'm Monica's AI assistant, here to help you learn all about her background, skills, and experience. What would you like to know?
+                    </div>
+                </div>
+            </div>
+
+            <!-- Input -->
+            <div class="chat-input-area">
+                <input
+                    type="text"
+                    id="messageInput"
+                    class="form-control"
+                    placeholder="Ask about Monica's experience, skills, projects…"
+                    aria-label="Your question for Monica's AI assistant"
+                    maxlength="500"
+                    autocomplete="off" />
+                <button class="send-btn" id="sendBtn" aria-label="Send message" title="Send">
+                    <i class="fas fa-paper-plane"></i>
+                </button>
+            </div>
+
+            <p class="chat-disclaimer">
+                Responses are generated by AI based on Monica's portfolio · Always verify details directly with Monica at
+                <a href="mailto:Monica.rivera4@outlook.com">Monica.rivera4@outlook.com</a>
+            </p>
+        </div>
+    </div>
+</div>
+
+<script>
+    const chatWindow = document.getElementById('chatWindow');
+    const messageInput = document.getElementById('messageInput');
+    const sendBtn = document.getElementById('sendBtn');
+
+    let conversationHistory = [];
+
+    function scrollToBottom() {
+        chatWindow.scrollTop = chatWindow.scrollHeight;
+    }
+
+    function appendMessage(role, text) {
+        const isAi = role === 'ai';
+        const wrapper = document.createElement('div');
+        wrapper.className = 'message ' + (isAi ? 'ai-message' : 'user-message');
+
+        const label = document.createElement('span');
+        label.className = 'message-label';
+        label.textContent = isAi ? 'Monica\'s AI ✨' : 'You';
+
+        const bubble = document.createElement('div');
+        bubble.className = 'message-bubble';
+        bubble.textContent = text;
+
+        wrapper.appendChild(label);
+        wrapper.appendChild(bubble);
+        chatWindow.appendChild(wrapper);
+        scrollToBottom();
+        return wrapper;
+    }
+
+    function showTypingIndicator() {
+        const wrapper = document.createElement('div');
+        wrapper.className = 'message ai-message';
+        wrapper.id = 'typingIndicator';
+
+        const label = document.createElement('span');
+        label.className = 'message-label';
+        label.textContent = 'Monica\'s AI ✨';
+
+        const dotsDiv = document.createElement('div');
+        dotsDiv.className = 'message-bubble typing-dots';
+        dotsDiv.innerHTML = '<span></span><span></span><span></span>';
+
+        wrapper.appendChild(label);
+        wrapper.appendChild(dotsDiv);
+        chatWindow.appendChild(wrapper);
+        scrollToBottom();
+        return wrapper;
+    }
+
+    function removeTypingIndicator() {
+        const indicator = document.getElementById('typingIndicator');
+        if (indicator) indicator.remove();
+    }
+
+    async function sendMessage(userText) {
+        userText = userText.trim();
+        if (!userText) return;
+
+        // Hide suggested questions once conversation starts
+        const suggested = document.getElementById('suggestedQuestions');
+        if (suggested) suggested.style.display = 'none';
+
+        // Render user message
+        appendMessage('user', userText);
+        messageInput.value = '';
+        sendBtn.disabled = true;
+
+        // Show typing indicator
+        showTypingIndicator();
+
+        // Build history payload (last 10 turns)
+        conversationHistory.push({ role: 'user', content: userText });
+        const historyPayload = conversationHistory.slice(-10);
+
+        try {
+            const response = await fetch('/api/chat/message', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ message: userText, history: historyPayload.slice(0, -1) })
+            });
+
+            removeTypingIndicator();
+
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+
+            const data = await response.json();
+            const reply = data.reply || 'Sorry, I didn\'t catch that. Please try again!';
+            appendMessage('ai', reply);
+            conversationHistory.push({ role: 'assistant', content: reply });
+
+        } catch {
+            removeTypingIndicator();
+            appendMessage('ai', 'Oops, something went wrong 🌸 Please try again or reach out to Monica at Monica.rivera4@@outlook.com');
+        }
+
+        sendBtn.disabled = false;
+        messageInput.focus();
+    }
+
+    function askSuggested(btn) {
+        sendMessage(btn.textContent);
+    }
+
+    sendBtn.addEventListener('click', () => sendMessage(messageInput.value));
+
+    messageInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            sendMessage(messageInput.value);
+        }
+    });
+</script>
