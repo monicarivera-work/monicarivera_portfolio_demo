@@ -712,7 +712,7 @@
 
         <!-- ── Project 3: This Portfolio ── -->
         <div class="arch-diagram" id="diagram-portfolio" role="tabpanel" aria-labelledby="tab-portfolio">
-            <svg class="arch-svg" viewBox="0 0 820 400" aria-label="Portfolio application architecture diagram">
+            <svg class="arch-svg" viewBox="0 0 900 420" aria-label="Portfolio application architecture diagram">
                 <defs>
                     <marker id="arrow3" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
                         <polygon points="0 0, 8 3, 0 6" fill="#d4b5e8" />
@@ -788,15 +788,15 @@
                     <text class="node-sublabel" x="740" y="124">SSE Response</text>
                 </g>
 
-                <!-- Azure File Storage -->
+                <!-- Azure Storage Account -->
                 <g class="arch-node" tabindex="0" role="button"
-                   aria-label="Azure File Storage - click for details"
+                   aria-label="Azure Storage Account - click for details"
                    onclick="openDetail('port-filestorage')" onkeydown="keyDetail(event,'port-filestorage')">
                     <rect class="node-box" x="240" y="220" width="140" height="60" rx="14"
                           fill="rgba(179,229,252,0.35)" stroke="#b3e5fc" stroke-width="2" />
                     <text class="node-icon" x="310" y="240">📁</text>
-                    <text class="node-label" x="310" y="260">Azure File</text>
-                    <text class="node-sublabel" x="310" y="273">Storage (Resume)</text>
+                    <text class="node-label" x="310" y="260">Azure Storage</text>
+                    <text class="node-sublabel" x="310" y="273">Account</text>
                 </g>
 
                 <!-- Azure Key Vault -->
@@ -823,6 +823,21 @@
 
                 <line class="arch-connector" stroke="#d4b5e8" x1="310" y1="280" x2="310" y2="320" marker-end="url(#arrow3)" stroke-dasharray="4,4" opacity="0.5" />
                 <line class="arch-connector" stroke="#f5c9d4" x1="520" y1="140" x2="520" y2="220" marker-end="url(#arrow3-pink)" stroke-dasharray="4,4" />
+
+                <!-- APIM dashed connector from Web App -->
+                <line class="arch-connector" stroke="#d4b5e8" x1="370" y1="130" x2="450" y2="310" marker-end="url(#arrow3)" stroke-dasharray="5,4" opacity="0.6" />
+                <text class="connector-label" x="392" y="230">API gateway</text>
+
+                <!-- Azure API Management (Planned) -->
+                <g class="arch-node" tabindex="0" role="button"
+                   aria-label="Azure API Management (Planned) - click for details"
+                   onclick="openDetail('port-apim')" onkeydown="keyDetail(event,'port-apim')">
+                    <rect class="node-box" x="450" y="310" width="130" height="60" rx="14"
+                          fill="rgba(212,181,232,0.15)" stroke="#d4b5e8" stroke-width="2" stroke-dasharray="6,3" />
+                    <text class="node-icon" x="515" y="330">🌐</text>
+                    <text class="node-label" x="515" y="350">Azure APIM</text>
+                    <text class="node-sublabel" x="515" y="363">Planned</text>
+                </g>
             </svg>
 
             <div class="arch-legend">
@@ -831,6 +846,7 @@
                 <div class="legend-item"><div class="legend-dot" style="background:#b3e5fc"></div>Storage</div>
                 <div class="legend-item"><div class="legend-dot" style="background:#f5c9d4"></div>Security</div>
                 <div class="legend-item"><div class="legend-dot" style="background:#c8e6c9"></div>Real-Time / Streaming</div>
+                <div class="legend-item"><div class="legend-dot" style="background:rgba(212,181,232,0.15); border:1px dashed #d4b5e8"></div>Planned / In Progress</div>
             </div>
         </div>
 
@@ -1038,7 +1054,7 @@ const componentData = {
         icon: '🌸', category: 'Web Application',
         title: 'Azure Web App — ASP.NET Core 8',
         tech: ['ASP.NET Core 8', 'Razor Pages', 'C# 12', 'Dependency Injection', 'Azure Web App Service'],
-        why: 'Razor Pages offer a clean page-centric model that maps naturally to a portfolio\'s page structure. ASP.NET Core\'s built-in DI, configuration, and logging make it easy to wire up Azure services cleanly.',
+        why: 'Azure Web App was chosen because it was a quick and easy way to get a Razor Pages website up and running that is easily customizable but still able to support more complicated components as the portfolio grows.',
         story: '<strong>Challenge:</strong> Keeping secrets (API keys, connection strings) out of source control while making them easy to inject at runtime in Azure.<br><br><strong>Solution:</strong> Used ASP.NET Core\'s configuration system backed by Azure Key Vault and App Service Application Settings. Local development uses user-secrets; production reads from Key Vault via Managed Identity—same code, zero secrets in Git.',
         links: [{ label: 'GitHub Repository', url: 'https://github.com/monicarivera-work/monicarivera_portfolio_demo' }]
     },
@@ -1046,7 +1062,7 @@ const componentData = {
         icon: '🤖', category: 'AI Service',
         title: 'Claude AI (Anthropic)',
         tech: ['Claude 3 Haiku / Sonnet', 'Anthropic Messages API', 'System Prompt Engineering', 'HttpClient', 'JSON Streaming'],
-        why: 'Claude was chosen for its strong instruction-following, safe output style, and transparent API pricing. The Haiku model provides low-latency responses (under 500 ms to first token) ideal for a chat experience.',
+        why: 'Claude AI was chosen because it is important to demonstrate a proficiency with AI tools and to show adaptability to modern technology. Integrating a real AI API — rather than a mock — shows that Monica can evaluate, connect to, and ship production-grade AI features.',
         story: '<strong>Challenge:</strong> Making the AI stay on-topic about Monica\'s background without hallucinating fabricated credentials or job history.<br><br><strong>Solution:</strong> Engineered a detailed system prompt that grounds the model with factual information about Monica\'s skills and experience. The prompt explicitly instructs the model to say "I don\'t know" rather than guess—keeping all responses accurate and on-brand.',
         links: [{ label: 'Anthropic API Docs', url: 'https://docs.anthropic.com' }]
     },
@@ -1060,9 +1076,9 @@ const componentData = {
     },
     'port-filestorage': {
         icon: '📁', category: 'Storage',
-        title: 'Azure File Storage',
-        tech: ['Azure Files', 'Azure SDK for .NET', 'ShareClient', 'SAS Token', 'Stream Download'],
-        why: 'Azure Files provides a managed SMB/REST file share accessible from the App Service without deploying or maintaining any infrastructure. Resume files can be updated by uploading to the share—no code deploy needed.',
+        title: 'Azure Storage Account',
+        tech: ['Azure Storage Account', 'Azure Blob Storage', 'Azure Files', 'Azure SDK for .NET', 'SAS Token', 'Stream Download'],
+        why: 'Azure Storage Account was chosen because it provided a reliable and scalable place to store a resume and other files, accessible from the web app without managing any infrastructure.',
         story: '<strong>Challenge:</strong> Resume downloads needed to serve a current file without requiring a code deployment every time the resume is updated.<br><br><strong>Solution:</strong> Stored the resume in an Azure File Share. A file name environment variable controls which file is served. Updating the resume is as simple as uploading a new file and changing one App Setting—zero downtime, zero deployment.',
         links: []
     },
@@ -1081,6 +1097,14 @@ const componentData = {
         why: 'Application Insights provides both server-side and client-side telemetry in one dashboard. The JavaScript SDK enables me to track which portfolio sections visitors engage with, informing future content decisions.',
         story: '<strong>Challenge:</strong> No visibility into whether visitors were finding the AI chat feature or dropping off at the home page.<br><br><strong>Solution:</strong> Added custom Application Insights events for key interactions (chat started, resume downloaded, page time-on-page). The resulting data showed 70% of visitors reached the AI chat—validating that the navigation placement was working.',
         links: []
+    },
+    'port-apim': {
+        icon: '🌐', category: 'API Layer — Planned',
+        title: 'Azure API Management',
+        tech: ['Azure API Management', 'API Gateway', 'Rate Limiting', 'OAuth 2.0', 'Subscription Keys', 'API Versioning'],
+        why: 'Azure API Management will be added to provide a clean, versioned API contract between the front-end and backend services. It enables throttling, authentication enforcement, and monitoring of all API traffic in one place — keeping backend services decoupled from client concerns.',
+        story: '<strong>Challenge:</strong> As the portfolio adds more backend features (AI chat, file downloads, contact form), each endpoint has different auth and rate-limiting needs that would otherwise be scattered across controllers.<br><br><strong>Solution:</strong> Introducing APIM as a unified API gateway centralises those concerns. Each feature gets a named API product with its own policy, making it easy to add or revoke access without touching application code.',
+        links: [{ label: 'Azure APIM Docs', url: 'https://learn.microsoft.com/azure/api-management/' }]
     }
 };
 
