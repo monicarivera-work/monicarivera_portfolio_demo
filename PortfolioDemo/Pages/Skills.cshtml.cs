@@ -6,14 +6,19 @@ namespace PortfolioDemo.Pages
     public class SkillsModel : PageModel
     {
         private readonly ILogger<SkillsModel> _logger;
+        private readonly IConfiguration _configuration;
 
-        public SkillsModel(ILogger<SkillsModel> logger)
+        public string ResumeFileName { get; private set; } = string.Empty;
+
+        public SkillsModel(ILogger<SkillsModel> logger, IConfiguration configuration)
         {
             _logger = logger;
+            _configuration = configuration;
         }
 
         public void OnGet()
         {
+            ResumeFileName = _configuration[Constants.ResumeFileNameKey] ?? string.Empty;
         }
     }
 
