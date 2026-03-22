@@ -1,0 +1,544 @@
+@page
+@model MiniGameModel
+@{
+    ViewData["Title"] = "Mini Game";
+    ViewData["Description"] = "Take a break — play Monica's Gravity Flip platformer. How long can you survive?";
+}
+
+<style>
+    .game-page-wrapper {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 2rem 1rem 3rem;
+        min-height: calc(100vh - 140px);
+    }
+
+    .game-page-wrapper h1 {
+        font-family: 'Playfair Display', serif;
+        margin-bottom: 0.5rem;
+    }
+
+    .game-subtitle {
+        color: #5a5a6e;
+        font-family: 'Lato', sans-serif;
+        margin-bottom: 1.5rem;
+        font-size: 1rem;
+    }
+
+    body.dark-mode .game-subtitle {
+        color: #c8b8d8;
+    }
+
+    #gameCanvas {
+        border-radius: 16px;
+        box-shadow: 0 8px 32px rgba(180, 120, 220, 0.25), 0 2px 8px rgba(0,0,0,0.12);
+        display: block;
+        max-width: 100%;
+        cursor: pointer;
+        touch-action: none;
+    }
+
+    .game-hint {
+        margin-top: 0.75rem;
+        font-family: 'Lato', sans-serif;
+        font-size: 0.85rem;
+        color: #8a7a9e;
+    }
+
+    body.dark-mode .game-hint {
+        color: #b0a0c8;
+    }
+</style>
+
+<div class="game-page-wrapper">
+    <h1>🎮 Gravity Flip</h1>
+    <p class="game-subtitle">A side-scrolling platformer — flip gravity to survive!</p>
+    <canvas id="gameCanvas" width="800" height="400" aria-label="Gravity Flip platformer game. Press Space or tap to flip gravity and avoid gaps." role="application" tabindex="0"></canvas>
+    <p class="game-hint">Press <strong>Space</strong> or <strong>tap</strong> to flip gravity &nbsp;|&nbsp; Avoid the gaps!</p>
+</div>
+
+<script>
+(function () {
+    'use strict';
+
+    /* ── Canvas setup ── */
+    const canvas  = document.getElementById('gameCanvas');
+    const ctx     = canvas.getContext('2d');
+
+    /* Responsive sizing */
+    function resizeCanvas() {
+        const maxW = Math.min(800, window.innerWidth - 32);
+        const scale = maxW / 800;
+        canvas.style.width  = maxW + 'px';
+        canvas.style.height = Math.round(400 * scale) + 'px';
+    }
+    resizeCanvas();
+    window.addEventListener('resize', resizeCanvas);
+
+    /* ── Colour palette (light / dark mode) ── */
+    function palette() {
+        const dark = document.body.classList.contains('dark-mode');
+        return {
+            bg1      : dark ? 'rgba(40,30,55,0.98)'         : 'rgba(245,240,255,0.98)',
+            bg2      : dark ? 'rgba(55,35,70,0.98)'         : 'rgba(255,240,248,0.98)',
+            bgGrad1  : dark ? 'rgba(212,181,232,0.08)'      : 'rgba(212,181,232,0.22)',
+            bgGrad2  : dark ? 'rgba(245,201,212,0.08)'      : 'rgba(245,201,212,0.22)',
+            platform : dark ? '#7a5a9e'                      : '#b48fd8',
+            platGlow : dark ? 'rgba(180,143,216,0.35)'      : 'rgba(180,143,216,0.45)',
+            player   : dark ? '#f5c9d4'                      : '#d4b5e8',
+            playerGlow: dark ? 'rgba(245,201,212,0.7)'      : 'rgba(212,181,232,0.8)',
+            scoreText: dark ? '#e0d0f0'                      : '#5a5a6e',
+            overlayBg: dark ? 'rgba(30,20,45,0.88)'         : 'rgba(255,250,255,0.88)',
+            overlayBorder: dark ? 'rgba(212,181,232,0.3)'   : 'rgba(180,143,216,0.4)',
+            titleText: dark ? '#f0d8f8'                      : '#7a4a9e',
+            bodyText : dark ? '#d4c0e8'                      : '#5a5a6e',
+            btnBg    : 'linear-gradient(135deg,#d4b5e8,#f5c9d4)',
+            btnText  : '#4a3060',
+            floorLine: dark ? 'rgba(180,143,216,0.25)'      : 'rgba(180,143,216,0.3)',
+        };
+    }
+
+    /* ── Game constants ── */
+    const W = 800, H = 400;
+    const GROUND_Y   = H - 60;   /* y of floor surface */
+    const CEIL_Y     = 60;       /* y of ceiling surface */
+    const PLAT_H     = 18;
+    const PLAYER_W   = 28;
+    const PLAYER_H   = 28;
+    const GAP_MIN    = 90;
+    const GAP_MAX    = 160;
+    const PLAT_MIN   = 60;
+    const PLAT_MAX   = 200;
+    const GRAVITY    = 0.55;
+    const JUMP_SPEED = -10;      /* velocity when gravity flips */
+    const BASE_SPEED = 3.2;
+
+    /* ── State ── */
+    let state      = 'intro';   /* intro | playing | gameover */
+    let score      = 0;
+    let highScore  = 0;
+    let speed      = BASE_SPEED;
+    let frameCount = 0;
+    let raf        = null;
+
+    /* Player */
+    let player = {};
+    /* Platforms — two rows: floor (gravDir=1) and ceiling (gravDir=-1) */
+    let platforms = [];
+    /* Particles */
+    let particles = [];
+
+    /* ── Helpers ── */
+    function lerp(a, b, t) { return a + (b - a) * t; }
+
+    function roundRect(cx, x, y, w, h, r) {
+        cx.beginPath();
+        cx.moveTo(x + r, y);
+        cx.lineTo(x + w - r, y);
+        cx.arcTo(x + w, y,     x + w, y + r,     r);
+        cx.lineTo(x + w, y + h - r);
+        cx.arcTo(x + w, y + h, x + w - r, y + h, r);
+        cx.lineTo(x + r, y + h);
+        cx.arcTo(x,     y + h, x,     y + h - r, r);
+        cx.lineTo(x,     y + r);
+        cx.arcTo(x,     y,     x + r, y,         r);
+        cx.closePath();
+    }
+
+    /* ── Init / reset ── */
+    function initGame() {
+        score      = 0;
+        speed      = BASE_SPEED;
+        frameCount = 0;
+        particles  = [];
+
+        player = {
+            x    : 120,
+            y    : GROUND_Y - PLAYER_H,
+            vy   : 0,
+            grav : 1,          /* 1 = floor, -1 = ceiling */
+            flip : false,      /* animating flip */
+            flipT: 0,          /* flip animation timer */
+            angle: 0,
+        };
+
+        /* Seed platforms so screen is already populated */
+        platforms = [];
+        seedPlatforms();
+    }
+
+    function seedPlatforms() {
+        /* Create floor platforms covering the visible area */
+        let x = 0;
+        while (x < W + 200) {
+            const pw = rand(PLAT_MIN, PLAT_MAX);
+            platforms.push({ x, y: GROUND_Y, w: pw, side: 'floor' });
+            x += pw + rand(GAP_MIN, GAP_MAX);
+        }
+        /* Create ceiling platforms (offset so gaps don't always line up) */
+        x = rand(100, 300);
+        while (x < W + 200) {
+            const pw = rand(PLAT_MIN, PLAT_MAX);
+            platforms.push({ x, y: CEIL_Y - PLAT_H, w: pw, side: 'ceil' });
+            x += pw + rand(GAP_MIN, GAP_MAX);
+        }
+    }
+
+    function rand(min, max) {
+        return Math.floor(Math.random() * (max - min + 1)) + min;
+    }
+
+    /* ── Input ── */
+    function flip() {
+        if (state !== 'playing') return;
+        player.grav  *= -1;
+        player.vy     = JUMP_SPEED * player.grav;
+        player.flip   = true;
+        player.flipT  = 0;
+        spawnFlipParticles();
+    }
+
+    document.addEventListener('keydown', function (e) {
+        if (e.code === 'Space' || e.key === ' ') {
+            e.preventDefault();
+            if (state === 'intro' || state === 'gameover') {
+                startGame();
+            } else {
+                flip();
+            }
+        }
+    });
+
+    canvas.addEventListener('pointerdown', function (e) {
+        e.preventDefault();
+        if (state === 'intro' || state === 'gameover') {
+            startGame();
+        } else {
+            flip();
+        }
+    });
+
+    function startGame() {
+        initGame();
+        state = 'playing';
+        if (raf) cancelAnimationFrame(raf);
+        raf = requestAnimationFrame(loop);
+    }
+
+    /* ── Particles ── */
+    function spawnFlipParticles() {
+        for (let i = 0; i < 12; i++) {
+            particles.push({
+                x  : player.x + PLAYER_W / 2,
+                y  : player.y + PLAYER_H / 2,
+                vx : (Math.random() - 0.5) * 5,
+                vy : (Math.random() - 0.5) * 5,
+                life: 1,
+                decay: 0.04 + Math.random() * 0.04,
+                r  : 2 + Math.random() * 3,
+            });
+        }
+    }
+
+    function updateParticles() {
+        particles = particles.filter(function (p) {
+            p.x   += p.vx;
+            p.y   += p.vy;
+            p.life -= p.decay;
+            return p.life > 0;
+        });
+    }
+
+    /* ── Platform generation ── */
+    function getLastX(side) {
+        let max = -Infinity;
+        platforms.forEach(function (p) {
+            if (p.side === side) max = Math.max(max, p.x + p.w);
+        });
+        return max;
+    }
+
+    function spawnMorePlatforms() {
+        ['floor', 'ceil'].forEach(function (side) {
+            while (getLastX(side) < W + 400) {
+                const pw  = rand(PLAT_MIN, PLAT_MAX);
+                const gx  = rand(GAP_MIN, GAP_MAX);
+                const lastX = getLastX(side);
+                const y   = side === 'floor' ? GROUND_Y : CEIL_Y - PLAT_H;
+                platforms.push({ x: lastX + gx, y, w: pw, side });
+            }
+        });
+    }
+
+    /* ── Update ── */
+    function update() {
+        frameCount++;
+        score++;
+
+        /* Speed ramp */
+        speed = BASE_SPEED + (frameCount / 600);
+
+        /* Player physics */
+        player.vy    += GRAVITY * player.grav;
+        player.y     += player.vy;
+
+        /* Flip animation */
+        if (player.flip) {
+            player.flipT += 0.15;
+            player.angle  = player.flipT * Math.PI;
+            if (player.flipT >= 1) {
+                player.flip  = false;
+                player.angle = 0;
+            }
+        }
+
+        /* Platform collision */
+        let onSurface = false;
+        platforms.forEach(function (p) {
+            if (player.x + PLAYER_W > p.x && player.x < p.x + p.w) {
+                if (p.side === 'floor' && player.grav === 1) {
+                    const bottom = GROUND_Y;
+                    if (player.y + PLAYER_H >= bottom && player.vy >= 0) {
+                        player.y  = bottom - PLAYER_H;
+                        player.vy = 0;
+                        onSurface = true;
+                    }
+                } else if (p.side === 'ceil' && player.grav === -1) {
+                    const top = CEIL_Y;
+                    if (player.y <= top && player.vy <= 0) {
+                        player.y  = top;
+                        player.vy = 0;
+                        onSurface = true;
+                    }
+                }
+            }
+        });
+
+        /* Scroll platforms */
+        platforms.forEach(function (p) { p.x -= speed; });
+        platforms = platforms.filter(function (p) { return p.x + p.w > -10; });
+        spawnMorePlatforms();
+
+        /* Game over: player exits canvas vertically */
+        if (player.y > H + 20 || player.y < -PLAYER_H - 20) {
+            endGame();
+            return;
+        }
+
+        updateParticles();
+    }
+
+    function endGame() {
+        if (score > highScore) highScore = score;
+        state = 'gameover';
+    }
+
+    /* ── Draw helpers ── */
+    function drawBackground(p) {
+        const grad = ctx.createLinearGradient(0, 0, W, H);
+        grad.addColorStop(0, p.bgGrad1);
+        grad.addColorStop(1, p.bgGrad2);
+
+        ctx.fillStyle = p.bg1;
+        ctx.fillRect(0, 0, W, H);
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, W, H);
+
+        /* Subtle floor / ceiling lines */
+        ctx.strokeStyle = p.floorLine;
+        ctx.lineWidth   = 2;
+        ctx.setLineDash([8, 6]);
+        ctx.beginPath(); ctx.moveTo(0, GROUND_Y); ctx.lineTo(W, GROUND_Y); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(0, CEIL_Y);   ctx.lineTo(W, CEIL_Y);   ctx.stroke();
+        ctx.setLineDash([]);
+    }
+
+    function drawPlatforms(p) {
+        platforms.forEach(function (plt) {
+            /* Glow */
+            ctx.shadowColor = p.platGlow;
+            ctx.shadowBlur  = 10;
+            ctx.fillStyle   = p.platform;
+            roundRect(ctx, plt.x, plt.y, plt.w, PLAT_H, 5);
+            ctx.fill();
+            ctx.shadowBlur  = 0;
+        });
+    }
+
+    function drawPlayer(p) {
+        const cx = player.x + PLAYER_W / 2;
+        const cy = player.y + PLAYER_H / 2;
+
+        ctx.save();
+        ctx.translate(cx, cy);
+        if (player.flip) {
+            ctx.rotate(player.angle * player.grav);
+        }
+
+        /* Glow */
+        ctx.shadowColor = p.playerGlow;
+        ctx.shadowBlur  = 18;
+        ctx.fillStyle   = p.player;
+        roundRect(ctx, -PLAYER_W / 2, -PLAYER_H / 2, PLAYER_W, PLAYER_H, 6);
+        ctx.fill();
+
+        /* Inner shine */
+        ctx.shadowBlur = 0;
+        ctx.fillStyle  = 'rgba(255,255,255,0.35)';
+        ctx.beginPath();
+        ctx.ellipse(-5, -6, 5, 4, -0.5, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.restore();
+    }
+
+    function drawParticles(p) {
+        particles.forEach(function (pt) {
+            ctx.globalAlpha = pt.life;
+            ctx.fillStyle   = p.player;
+            ctx.beginPath();
+            ctx.arc(pt.x, pt.y, pt.r, 0, Math.PI * 2);
+            ctx.fill();
+        });
+        ctx.globalAlpha = 1;
+    }
+
+    function drawHUD(p) {
+        ctx.fillStyle   = p.scoreText;
+        ctx.font        = "bold 16px 'Lato', sans-serif";
+        ctx.textAlign   = 'left';
+        ctx.fillText('Score: ' + Math.floor(score / 6), 16, 28);
+        ctx.textAlign   = 'right';
+        ctx.fillText('Best: ' + Math.floor(highScore / 6), W - 16, 28);
+        ctx.textAlign   = 'left';
+    }
+
+    /* ── Overlay card ── */
+    function drawOverlayCard(p, lines) {
+        const cardW = 480, cardH = lines.length * 42 + 60;
+        const cx = W / 2, cy = H / 2;
+        const x  = cx - cardW / 2, y = cy - cardH / 2;
+
+        /* Backdrop blur simulation */
+        ctx.fillStyle = p.overlayBg;
+        roundRect(ctx, x, y, cardW, cardH, 18);
+        ctx.fill();
+
+        ctx.strokeStyle = p.overlayBorder;
+        ctx.lineWidth   = 1.5;
+        roundRect(ctx, x, y, cardW, cardH, 18);
+        ctx.stroke();
+
+        ctx.textAlign = 'center';
+        lines.forEach(function (line, i) {
+            ctx.font      = line.font || "16px 'Lato', sans-serif";
+            ctx.fillStyle = line.color || p.bodyText;
+            ctx.fillText(line.text, cx, y + 50 + i * 42);
+        });
+        ctx.textAlign = 'left';
+    }
+
+    /* ── Try Again button ── */
+    const BTN = { x: 0, y: 0, w: 160, h: 42 };
+
+    function drawTryAgainBtn(p) {
+        BTN.x = W / 2 - BTN.w / 2;
+        BTN.y = H / 2 + 80;
+
+        const grad = ctx.createLinearGradient(BTN.x, BTN.y, BTN.x + BTN.w, BTN.y);
+        grad.addColorStop(0, '#d4b5e8');
+        grad.addColorStop(1, '#f5c9d4');
+
+        ctx.shadowColor = 'rgba(180,143,216,0.4)';
+        ctx.shadowBlur  = 12;
+        ctx.fillStyle   = grad;
+        roundRect(ctx, BTN.x, BTN.y, BTN.w, BTN.h, 12);
+        ctx.fill();
+        ctx.shadowBlur  = 0;
+
+        ctx.fillStyle = p.btnText;
+        ctx.font      = "bold 15px 'Lato', sans-serif";
+        ctx.textAlign = 'center';
+        ctx.fillText('Try Again', W / 2, BTN.y + 28);
+        ctx.textAlign = 'left';
+    }
+
+    /* ── Draw scenes ── */
+    function drawIntro(p) {
+        drawBackground(p);
+
+        drawOverlayCard(p, [
+            { text: '🌸 Gravity Flip Platformer', font: "bold 24px 'Playfair Display', serif", color: p.titleText },
+            { text: "You've made it this far in the interview —", font: "italic 14px 'Lato', sans-serif", color: p.bodyText },
+            { text: 'can you survive the gravity flip?', font: "italic 14px 'Lato', sans-serif", color: p.bodyText },
+            { text: 'Press Space / Tap to flip gravity', font: "14px 'Lato', sans-serif", color: p.bodyText },
+            { text: 'Avoid the gaps. Good luck! 💜', font: "14px 'Lato', sans-serif", color: p.bodyText },
+        ]);
+
+        /* Start button */
+        const bx = W / 2 - 80, by = H / 2 + 90, bw = 160, bh = 42;
+        const grad = ctx.createLinearGradient(bx, by, bx + bw, by);
+        grad.addColorStop(0, '#d4b5e8');
+        grad.addColorStop(1, '#f5c9d4');
+        ctx.fillStyle = grad;
+        roundRect(ctx, bx, by, bw, bh, 12);
+        ctx.fill();
+        ctx.fillStyle = p.btnText;
+        ctx.font      = "bold 15px 'Lato', sans-serif";
+        ctx.textAlign = 'center';
+        ctx.fillText('Start Game', W / 2, by + 28);
+        ctx.textAlign = 'left';
+    }
+
+    function drawPlaying(p) {
+        drawBackground(p);
+        drawPlatforms(p);
+        drawParticles(p);
+        drawPlayer(p);
+        drawHUD(p);
+    }
+
+    function drawGameOver(p) {
+        drawBackground(p);
+        drawPlatforms(p);
+        drawParticles(p);
+        drawPlayer(p);
+
+        /* Dim overlay */
+        ctx.fillStyle = 'rgba(0,0,0,0.25)';
+        ctx.fillRect(0, 0, W, H);
+
+        drawOverlayCard(p, [
+            { text: 'Game Over 💔', font: "bold 26px 'Playfair Display', serif", color: p.titleText },
+            { text: 'Score: ' + Math.floor(score / 6), font: "18px 'Lato', sans-serif", color: p.bodyText },
+            { text: 'Best: ' + Math.floor(highScore / 6), font: "16px 'Lato', sans-serif", color: p.bodyText },
+        ]);
+
+        drawTryAgainBtn(p);
+    }
+
+    /* ── Main loop ── */
+    function loop() {
+        const p = palette();
+
+        if (state === 'playing') {
+            update();
+        }
+
+        if (state === 'intro') {
+            drawIntro(p);
+        } else if (state === 'playing') {
+            drawPlaying(p);
+        } else if (state === 'gameover') {
+            drawGameOver(p);
+        }
+
+        raf = requestAnimationFrame(loop);
+    }
+
+    /* ── Bootstrap ── */
+    initGame();
+    raf = requestAnimationFrame(loop);
+}());
+</script>
