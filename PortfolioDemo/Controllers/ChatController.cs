@@ -18,11 +18,10 @@ namespace PortfolioDemo.Controllers
         private const string ClaudeModel = "claude-opus-4-5";
         private const int MaxHistoryMessages = 10;
 
-        private const string SystemPrompt = @"You are Monica Rivera's friendly and knowledgeable AI assistant on her portfolio website. Your job is to help recruiters and hiring managers learn about Monica quickly and enthusiastically.
+        private const string SystemPromptTemplate = @"You are Monica Rivera's friendly and knowledgeable AI assistant on her portfolio website. Your job is to help recruiters and hiring managers learn about Monica quickly and enthusiastically.
 
 ## About Monica
 **Name:** Monica Leigh A. Rivera
-**Email:** Monica.rivera4@outlook.com
 **Title:** Software Engineer | Cloud Expert | Technical Leader
 
 ## Professional Summary
@@ -71,7 +70,7 @@ Software Engineer with extensive experience in cloud-based and distributed syste
 - Keep answers concise and recruiter-friendly (typically 2-4 sentences)
 - Highlight Monica's strengths naturally and positively
 - If asked about salary expectations, visa requirements, or specific availability dates, encourage reaching out to Monica directly
-- Encourage recruiters to contact Monica at Monica.rivera4@outlook.com for detailed discussions
+- Encourage recruiters to contact Monica at {0} for detailed discussions
 - Do not make up information not provided above
 - Always speak positively and accurately about Monica's experience
 - Feel free to use light, friendly emoji to keep the tone engaging";
@@ -90,13 +89,15 @@ Software Engineer with extensive experience in cloud-based and distributed syste
                 return BadRequest(new { error = "Message is required." });
 
             var apiKey = _configuration[Constants.AnthropicApiKeyName];
+            var contactEmail = _configuration[Constants.EmailAddressKey] ?? string.Empty;
+            var systemPrompt = string.Format(SystemPromptTemplate, contactEmail);
 
             if (string.IsNullOrEmpty(apiKey))
             {
-                return Ok(new
-                {
-                    reply = "Monica's AI assistant isn't fully configured yet — but I know she'd love to chat! Reach out directly at Monica.rivera4@outlook.com 💌"
-                });
+                var fallbackReply = string.IsNullOrWhiteSpace(contactEmail)
+                    ? "Monica's AI assistant isn't fully configured yet — but I know she'd love to chat! 💌"
+                    : $"Monica's AI assistant isn't fully configured yet — but I know she'd love to chat! Reach out directly at {contactEmail} 💌";
+                return Ok(new { reply = fallbackReply });
             }
 
             try
@@ -132,7 +133,7 @@ Software Engineer with extensive experience in cloud-based and distributed syste
                 {
                     model = ClaudeModel,
                     max_tokens = 512,
-                    system = SystemPrompt,
+                    system = systemPrompt,
                     messages
                 };
 
@@ -149,7 +150,10 @@ Software Engineer with extensive experience in cloud-based and distributed syste
                 {
                     var errorBody = await response.Content.ReadAsStringAsync();
                     _logger.LogError("Anthropic API returned {StatusCode}: {ErrorBody}", response.StatusCode, errorBody);
-                    return Ok(new { reply = "I'm having a little trouble right now 🌸 Please reach out to Monica directly at Monica.rivera4@outlook.com!" });
+                    var errorReply = string.IsNullOrWhiteSpace(contactEmail)
+                        ? "I'm having a little trouble right now 🌸 Please reach out to Monica directly!"
+                        : $"I'm having a little trouble right now 🌸 Please reach out to Monica directly at {contactEmail}!";
+                    return Ok(new { reply = errorReply });
                 }
 
                 var responseContent = await response.Content.ReadAsStringAsync();
@@ -164,7 +168,10 @@ Software Engineer with extensive experience in cloud-based and distributed syste
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error calling Anthropic API");
-                return Ok(new { reply = "Oops, something went wrong on my end 🌸 Please reach out to Monica directly at Monica.rivera4@outlook.com!" });
+                var catchReply = string.IsNullOrWhiteSpace(contactEmail)
+                    ? "Oops, something went wrong on my end 🌸 Please reach out to Monica directly!"
+                    : $"Oops, something went wrong on my end 🌸 Please reach out to Monica directly at {contactEmail}!";
+                return Ok(new { reply = catchReply });
             }
         }
     }

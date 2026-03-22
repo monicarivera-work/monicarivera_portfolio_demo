@@ -11,6 +11,12 @@
             <h1 class="mb-4">@ViewData["Title"]</h1>
 
             <h2 class="h3 mb-3">Monica Leigh A. Rivera</h2>
+            @if (!string.IsNullOrWhiteSpace(Model.ContactEmail))
+            {
+                <p class="lead mb-4">
+                    <strong>Email:</strong> <a href="mailto:@Model.ContactEmail">@Model.ContactEmail</a>
+                </p>
+            }
 
             <h2 class="mt-5 mb-3">Professional Summary</h2>
             <p>

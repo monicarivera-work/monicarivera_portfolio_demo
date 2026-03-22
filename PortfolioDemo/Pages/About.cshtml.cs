@@ -6,14 +6,19 @@ namespace PortfolioDemo.Pages
     public class AboutModel : PageModel
     {
         private readonly ILogger<AboutModel> _logger;
+        private readonly IConfiguration _configuration;
 
-        public AboutModel(ILogger<AboutModel> logger)
+        public string? ContactEmail { get; private set; }
+
+        public AboutModel(ILogger<AboutModel> logger, IConfiguration configuration)
         {
             _logger = logger;
+            _configuration = configuration;
         }
 
         public void OnGet()
         {
+            ContactEmail = _configuration[Constants.EmailAddressKey];
         }
     }
 

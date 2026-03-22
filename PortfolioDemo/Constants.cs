@@ -6,5 +6,6 @@
         public const string AzureFileShareName = "monicariveradocumentfileshare";
         public const string ResumeFileNameKey = "RESUME_FILE_NAME";
         public const string AnthropicApiKeyName = "ANTHROPIC_API_KEY";
+        public const string EmailAddressKey = "EMAIL_ADDRESS";
     }
 }
