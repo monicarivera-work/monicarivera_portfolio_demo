@@ -72,12 +72,19 @@
             <div class="skills-section">
                 <h4 class="mb-4">Monica's Resume</h4>
                 <div class="skill-tags">
-                    <span class="badge bg-warning text-dark">
-                        <a href="/file/download?fileName=MonicaLeighRiveraResume.docx">Download Docx</a>
-                    </span>
-                    <span class="badge bg-warning text-dark">
-                        <a href="/file/download?fileName=MonicaLeighRiveraResume.pdf">Download PDF</a>
-                    </span>
+                    @if (!string.IsNullOrEmpty(Model.ResumeFileName))
+                    {
+                        <span class="badge bg-warning text-dark">
+                            <a href="/file/download?fileName=@(Model.ResumeFileName).docx">Download Docx</a>
+                        </span>
+                        <span class="badge bg-warning text-dark">
+                            <a href="/file/download?fileName=@(Model.ResumeFileName).pdf">Download PDF</a>
+                        </span>
+                    }
+                    else
+                    {
+                        <span class="text-muted">Resume download unavailable.</span>
+                    }
                 </div>
 
             </div>

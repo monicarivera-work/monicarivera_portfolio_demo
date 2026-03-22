@@ -60,6 +60,8 @@ jobs:
   deploy:
     runs-on: windows-latest
     needs: build
+    env:
+      RESUME_FILE_NAME: ${{ secrets.RESUME_FILE_NAME }}
 
     steps:
       - name: Download artifact from build job
