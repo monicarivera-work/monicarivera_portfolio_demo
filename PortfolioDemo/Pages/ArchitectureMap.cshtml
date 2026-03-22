@@ -1,0 +1,1173 @@
+@page
+@model ArchitectureMapModel
+@{
+    ViewData["Title"] = "Architecture Map";
+    ViewData["Description"] = "Interactive architecture map of Monica Rivera's engineering projects — Azure Functions, SQL, hybrid connectivity, queues, and more.";
+}
+
+<style>
+    /* ── Page Layout ── */
+    .arch-hero {
+        text-align: center;
+        padding: 3rem 1rem 1.5rem;
+    }
+
+    .arch-hero h1 {
+        font-size: 2.6rem;
+        margin-bottom: 0.75rem;
+    }
+
+    .arch-hero p {
+        color: var(--text-light, #8a8a9e);
+        font-size: 1.05rem;
+        max-width: 680px;
+        margin: 0 auto 0.5rem;
+    }
+
+    /* ── Project Selector ── */
+    .project-tabs {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.6rem;
+        justify-content: center;
+        margin-bottom: 2rem;
+    }
+
+    .project-tab {
+        background: rgba(255, 255, 255, 0.65);
+        border: 2px solid rgba(212, 181, 232, 0.45);
+        border-radius: 50px;
+        padding: 8px 20px;
+        font-size: 0.9rem;
+        font-weight: 600;
+        color: var(--text-dark, #5a5a6e);
+        cursor: pointer;
+        transition: all 0.25s ease;
+        font-family: 'Lato', sans-serif;
+        backdrop-filter: blur(6px);
+    }
+
+    .project-tab:hover,
+    .project-tab.active {
+        background: linear-gradient(135deg, rgba(212, 181, 232, 0.6), rgba(245, 201, 212, 0.6));
+        border-color: rgba(212, 181, 232, 0.85);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 15px rgba(212, 181, 232, 0.3);
+    }
+
+    /* ── Diagram Canvas ── */
+    .diagram-wrapper {
+        background: rgba(255, 255, 255, 0.55);
+        backdrop-filter: blur(12px);
+        border: 2px solid rgba(212, 181, 232, 0.3);
+        border-radius: 20px;
+        padding: 2rem 1rem;
+        box-shadow: 0 8px 32px rgba(212, 181, 232, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.8);
+        min-height: 480px;
+        position: relative;
+        overflow-x: auto;
+    }
+
+    /* ── Architecture Diagram ── */
+    .arch-diagram {
+        display: none;
+        animation: fadeInUp 0.4s ease-out;
+    }
+
+    .arch-diagram.active {
+        display: block;
+    }
+
+    .arch-svg {
+        width: 100%;
+        max-width: 820px;
+        display: block;
+        margin: 0 auto;
+        overflow: visible;
+    }
+
+    /* ── Node Styles ── */
+    .arch-node {
+        cursor: pointer;
+        transition: all 0.25s ease;
+    }
+
+    .arch-node:hover .node-box {
+        filter: drop-shadow(0 0 12px rgba(212, 181, 232, 0.7));
+        transform: translateY(-3px);
+    }
+
+    .arch-node:focus .node-box {
+        outline: 3px solid #d4b5e8;
+        outline-offset: 3px;
+    }
+
+    .node-box {
+        transition: transform 0.25s ease, filter 0.25s ease;
+        transform-origin: center;
+    }
+
+    .node-label {
+        font-family: 'Lato', sans-serif;
+        font-weight: 700;
+        font-size: 13px;
+        fill: #5a5a6e;
+        pointer-events: none;
+        dominant-baseline: central;
+        text-anchor: middle;
+    }
+
+    .node-icon {
+        font-size: 20px;
+        pointer-events: none;
+        dominant-baseline: central;
+        text-anchor: middle;
+    }
+
+    .node-sublabel {
+        font-family: 'Lato', sans-serif;
+        font-size: 10px;
+        fill: #8a8a9e;
+        pointer-events: none;
+        dominant-baseline: central;
+        text-anchor: middle;
+    }
+
+    /* ── Connector Lines ── */
+    .arch-connector {
+        stroke-width: 2;
+        fill: none;
+        opacity: 0.6;
+        marker-end: url(#arrowhead);
+    }
+
+    .connector-label {
+        font-family: 'Lato', sans-serif;
+        font-size: 10px;
+        fill: #8a8a9e;
+        text-anchor: middle;
+    }
+
+    /* ── Legend ── */
+    .arch-legend {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.75rem;
+        justify-content: center;
+        margin-top: 1.5rem;
+    }
+
+    .legend-item {
+        display: flex;
+        align-items: center;
+        gap: 0.4rem;
+        font-size: 0.8rem;
+        color: var(--text-light, #8a8a9e);
+    }
+
+    .legend-dot {
+        width: 14px;
+        height: 14px;
+        border-radius: 4px;
+        flex-shrink: 0;
+    }
+
+    /* ── Hint ── */
+    .click-hint {
+        text-align: center;
+        font-size: 0.82rem;
+        color: var(--text-light, #8a8a9e);
+        margin-top: 1rem;
+        font-style: italic;
+    }
+
+    /* ── Detail Panel (slide-in) ── */
+    .detail-overlay {
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(90, 90, 110, 0.25);
+        backdrop-filter: blur(3px);
+        z-index: 1040;
+        animation: fadeIn 0.2s ease;
+    }
+
+    .detail-overlay.open {
+        display: flex;
+        align-items: flex-end;
+        justify-content: center;
+    }
+
+    .detail-panel {
+        background: rgba(255, 255, 255, 0.97);
+        backdrop-filter: blur(20px);
+        border-radius: 24px 24px 0 0;
+        padding: 2rem;
+        width: 100%;
+        max-width: 680px;
+        max-height: 90vh;
+        overflow-y: auto;
+        box-shadow: 0 -8px 40px rgba(212, 181, 232, 0.3);
+        animation: slideUp 0.3s ease;
+        position: relative;
+    }
+
+    @@media (min-width: 768px) {
+        .detail-overlay.open {
+            align-items: center;
+        }
+
+        .detail-panel {
+            border-radius: 24px;
+            max-height: 80vh;
+            animation: popIn 0.3s ease;
+        }
+    }
+
+    @@keyframes slideUp {
+        from { transform: translateY(100%); opacity: 0; }
+        to   { transform: translateY(0);    opacity: 1; }
+    }
+
+    @@keyframes popIn {
+        from { transform: scale(0.92); opacity: 0; }
+        to   { transform: scale(1);    opacity: 1; }
+    }
+
+    @@keyframes fadeIn {
+        from { opacity: 0; }
+        to   { opacity: 1; }
+    }
+
+    .detail-close {
+        position: absolute;
+        top: 1rem;
+        right: 1rem;
+        background: rgba(212, 181, 232, 0.2);
+        border: none;
+        border-radius: 50%;
+        width: 36px;
+        height: 36px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        font-size: 1rem;
+        color: var(--text-dark, #5a5a6e);
+        transition: background 0.2s;
+    }
+
+    .detail-close:hover {
+        background: rgba(212, 181, 232, 0.45);
+    }
+
+    .detail-icon {
+        font-size: 2.2rem;
+        margin-bottom: 0.5rem;
+        display: block;
+    }
+
+    .detail-title {
+        font-family: 'Playfair Display', serif;
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: var(--text-dark, #5a5a6e);
+        margin-bottom: 0.25rem;
+    }
+
+    .detail-category {
+        font-size: 0.8rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        color: #d4b5e8;
+        margin-bottom: 1rem;
+    }
+
+    .detail-section {
+        margin-bottom: 1.2rem;
+    }
+
+    .detail-section h4 {
+        font-family: 'Lato', sans-serif;
+        font-size: 0.78rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        color: #d4b5e8;
+        margin-bottom: 0.5rem;
+    }
+
+    .detail-section p {
+        font-size: 0.95rem;
+        color: var(--text-dark, #5a5a6e);
+        line-height: 1.65;
+        margin: 0;
+    }
+
+    .tech-pills {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.4rem;
+    }
+
+    .tech-pill {
+        background: linear-gradient(135deg, rgba(212, 181, 232, 0.35), rgba(245, 201, 212, 0.35));
+        border: 1px solid rgba(212, 181, 232, 0.5);
+        border-radius: 50px;
+        padding: 4px 12px;
+        font-size: 0.82rem;
+        color: var(--text-dark, #5a5a6e);
+        font-weight: 600;
+    }
+
+    .detail-link {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        color: #d4b5e8;
+        text-decoration: none;
+        font-size: 0.9rem;
+        font-weight: 600;
+        transition: color 0.2s;
+    }
+
+    .detail-link:hover {
+        color: #f5c9d4;
+        text-decoration: underline;
+    }
+
+    .challenge-story {
+        background: linear-gradient(135deg, rgba(255, 249, 196, 0.5), rgba(225, 245, 254, 0.5));
+        border-left: 4px solid #d4b5e8;
+        border-radius: 0 10px 10px 0;
+        padding: 0.9rem 1rem;
+        font-size: 0.93rem;
+        color: var(--text-dark, #5a5a6e);
+        line-height: 1.65;
+    }
+
+    /* ── Dark Mode ── */
+    body.dark-mode .diagram-wrapper {
+        background: rgba(22, 33, 62, 0.65);
+        border-color: rgba(212, 181, 232, 0.2);
+    }
+
+    body.dark-mode .detail-panel {
+        background: rgba(22, 33, 62, 0.97);
+    }
+
+    body.dark-mode .detail-title,
+    body.dark-mode .detail-section p,
+    body.dark-mode .challenge-story {
+        color: #e0d0f0;
+    }
+
+    body.dark-mode .tech-pill {
+        background: rgba(90, 60, 120, 0.5);
+        color: #e0d0f0;
+    }
+
+    body.dark-mode .node-label {
+        fill: #e0d0f0;
+    }
+
+    body.dark-mode .node-sublabel,
+    body.dark-mode .connector-label {
+        fill: #a090b0;
+    }
+</style>
+
+<!-- Page Hero -->
+<div class="arch-hero container">
+    <h1>🗺️ Architecture Map</h1>
+    <p>An interactive visual tour of my engineering work. Click any component to explore the tech, the reasoning, and the story behind it.</p>
+</div>
+
+<div class="container pb-5">
+
+    <!-- Project Selector -->
+    <div class="project-tabs" role="tablist" aria-label="Select a project architecture">
+        <button class="project-tab active" role="tab" aria-selected="true"
+                aria-controls="diagram-inventory" id="tab-inventory"
+                onclick="switchProject('inventory', this)">
+            🤖 AI Inventory System
+        </button>
+        <button class="project-tab" role="tab" aria-selected="false"
+                aria-controls="diagram-financial" id="tab-financial"
+                onclick="switchProject('financial', this)">
+            💳 Cloud Financial App
+        </button>
+        <button class="project-tab" role="tab" aria-selected="false"
+                aria-controls="diagram-portfolio" id="tab-portfolio"
+                onclick="switchProject('portfolio', this)">
+            🌸 This Portfolio
+        </button>
+    </div>
+
+    <!-- Diagram Canvas -->
+    <div class="diagram-wrapper">
+
+        <!-- ── Project 1: AI Inventory System ── -->
+        <div class="arch-diagram active" id="diagram-inventory" role="tabpanel" aria-labelledby="tab-inventory">
+            <svg class="arch-svg" viewBox="0 0 820 460" aria-label="AI Inventory System architecture diagram">
+                <defs>
+                    <marker id="arrowhead" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+                        <polygon points="0 0, 8 3, 0 6" fill="#d4b5e8" />
+                    </marker>
+                    <marker id="arrowhead-green" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+                        <polygon points="0 0, 8 3, 0 6" fill="#c8e6c9" />
+                    </marker>
+                    <marker id="arrowhead-blue" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+                        <polygon points="0 0, 8 3, 0 6" fill="#b3e5fc" />
+                    </marker>
+                </defs>
+
+                <!-- Connectors -->
+                <!-- Client → API Gateway -->
+                <line class="arch-connector" stroke="#d4b5e8" x1="130" y1="80" x2="240" y2="80" marker-end="url(#arrowhead)" />
+                <!-- API Gateway → Azure Functions -->
+                <line class="arch-connector" stroke="#d4b5e8" x1="360" y1="80" x2="455" y2="80" marker-end="url(#arrowhead)" />
+                <!-- Azure Functions → Copilot Agent -->
+                <line class="arch-connector" stroke="#d4b5e8" x1="555" y1="80" x2="655" y2="80" marker-end="url(#arrowhead)" />
+                <!-- Azure Functions → Service Bus -->
+                <line class="arch-connector" stroke="#c8e6c9" x1="505" y1="120" x2="505" y2="195" marker-end="url(#arrowhead-green)" />
+                <!-- Service Bus → Inventory Processor -->
+                <line class="arch-connector" stroke="#c8e6c9" x1="505" y1="255" x2="505" y2="320" marker-end="url(#arrowhead-green)" />
+                <!-- Inventory Processor → SQL DB -->
+                <line class="arch-connector" stroke="#b3e5fc" x1="455" y1="360" x2="330" y2="360" marker-end="url(#arrowhead-blue)" />
+                <!-- Azure Functions → SQL DB (direct read) -->
+                <path class="arch-connector" stroke="#b3e5fc" d="M 505 120 Q 360 200 300 320" marker-end="url(#arrowhead-blue)" stroke-dasharray="5,4" />
+                <!-- Inventory Processor → Key Vault -->
+                <line class="arch-connector" stroke="#f5c9d4" x1="555" y1="360" x2="645" y2="360" marker-end="url(#arrowhead)" stroke-dasharray="5,4" />
+                <!-- App Insights (monitoring) -->
+                <path class="arch-connector" stroke="#d4b5e8" d="M 130 130 Q 130 390 200 410" marker-end="url(#arrowhead)" stroke-dasharray="4,4" opacity="0.4" />
+
+                <!-- Connector labels -->
+                <text class="connector-label" x="190" y="70">HTTPS</text>
+                <text class="connector-label" x="410" y="70">invoke</text>
+                <text class="connector-label" x="610" y="70">AI prompt</text>
+                <text class="connector-label" x="520" y="160">enqueue</text>
+                <text class="connector-label" x="520" y="290">process</text>
+                <text class="connector-label" x="390" y="350">write/read</text>
+
+                <!-- ── Nodes ── -->
+                <!-- Client / Browser -->
+                <g class="arch-node" tabindex="0" role="button"
+                   aria-label="Client Application - click for details"
+                   onclick="openDetail('inv-client')" onkeydown="keyDetail(event,'inv-client')">
+                    <rect class="node-box" x="10" y="50" width="120" height="70" rx="14"
+                          fill="rgba(212,181,232,0.25)" stroke="#d4b5e8" stroke-width="2" />
+                    <text class="node-icon" x="70" y="72">💻</text>
+                    <text class="node-label" x="70" y="95">Client App</text>
+                    <text class="node-sublabel" x="70" y="110">React / Web</text>
+                </g>
+
+                <!-- API Gateway / App Service -->
+                <g class="arch-node" tabindex="0" role="button"
+                   aria-label="Azure API Management - click for details"
+                   onclick="openDetail('inv-apim')" onkeydown="keyDetail(event,'inv-apim')">
+                    <rect class="node-box" x="240" y="50" width="120" height="70" rx="14"
+                          fill="rgba(212,181,232,0.25)" stroke="#d4b5e8" stroke-width="2" />
+                    <text class="node-icon" x="300" y="72">🌐</text>
+                    <text class="node-label" x="300" y="95">Azure App</text>
+                    <text class="node-sublabel" x="300" y="110">Service / APIM</text>
+                </g>
+
+                <!-- Azure Functions -->
+                <g class="arch-node" tabindex="0" role="button"
+                   aria-label="Azure Functions - click for details"
+                   onclick="openDetail('inv-functions')" onkeydown="keyDetail(event,'inv-functions')">
+                    <rect class="node-box" x="455" y="50" width="100" height="70" rx="14"
+                          fill="rgba(200,230,201,0.3)" stroke="#c8e6c9" stroke-width="2" />
+                    <text class="node-icon" x="505" y="72">⚡</text>
+                    <text class="node-label" x="505" y="95">Azure</text>
+                    <text class="node-sublabel" x="505" y="110">Functions</text>
+                </g>
+
+                <!-- Copilot Agent -->
+                <g class="arch-node" tabindex="0" role="button"
+                   aria-label="Copilot AI Agent - click for details"
+                   onclick="openDetail('inv-copilot')" onkeydown="keyDetail(event,'inv-copilot')">
+                    <rect class="node-box" x="655" y="50" width="120" height="70" rx="14"
+                          fill="rgba(255,249,196,0.45)" stroke="#ffe082" stroke-width="2" />
+                    <text class="node-icon" x="715" y="72">🤖</text>
+                    <text class="node-label" x="715" y="95">Copilot Agent</text>
+                    <text class="node-sublabel" x="715" y="110">AI Workflow</text>
+                </g>
+
+                <!-- Service Bus -->
+                <g class="arch-node" tabindex="0" role="button"
+                   aria-label="Azure Service Bus - click for details"
+                   onclick="openDetail('inv-servicebus')" onkeydown="keyDetail(event,'inv-servicebus')">
+                    <rect class="node-box" x="455" y="195" width="100" height="60" rx="14"
+                          fill="rgba(200,230,201,0.3)" stroke="#c8e6c9" stroke-width="2" />
+                    <text class="node-icon" x="505" y="214">📨</text>
+                    <text class="node-label" x="505" y="235">Service Bus</text>
+                    <text class="node-sublabel" x="505" y="248">Queue</text>
+                </g>
+
+                <!-- Inventory Processor Function -->
+                <g class="arch-node" tabindex="0" role="button"
+                   aria-label="Inventory Processor Function - click for details"
+                   onclick="openDetail('inv-processor')" onkeydown="keyDetail(event,'inv-processor')">
+                    <rect class="node-box" x="455" y="320" width="100" height="60" rx="14"
+                          fill="rgba(200,230,201,0.3)" stroke="#c8e6c9" stroke-width="2" />
+                    <text class="node-icon" x="505" y="338">🔄</text>
+                    <text class="node-label" x="505" y="358">Inventory</text>
+                    <text class="node-sublabel" x="505" y="371">Processor</text>
+                </g>
+
+                <!-- Azure SQL -->
+                <g class="arch-node" tabindex="0" role="button"
+                   aria-label="Azure SQL Database - click for details"
+                   onclick="openDetail('inv-sql')" onkeydown="keyDetail(event,'inv-sql')">
+                    <rect class="node-box" x="190" y="325" width="120" height="60" rx="14"
+                          fill="rgba(179,229,252,0.35)" stroke="#b3e5fc" stroke-width="2" />
+                    <text class="node-icon" x="250" y="344">🗄️</text>
+                    <text class="node-label" x="250" y="364">Azure SQL</text>
+                    <text class="node-sublabel" x="250" y="377">Database</text>
+                </g>
+
+                <!-- Azure Key Vault -->
+                <g class="arch-node" tabindex="0" role="button"
+                   aria-label="Azure Key Vault - click for details"
+                   onclick="openDetail('inv-keyvault')" onkeydown="keyDetail(event,'inv-keyvault')">
+                    <rect class="node-box" x="645" y="330" width="110" height="60" rx="14"
+                          fill="rgba(245,201,212,0.35)" stroke="#f5c9d4" stroke-width="2" />
+                    <text class="node-icon" x="700" y="350">🔑</text>
+                    <text class="node-label" x="700" y="368">Key Vault</text>
+                    <text class="node-sublabel" x="700" y="381">Secrets</text>
+                </g>
+
+                <!-- App Insights -->
+                <g class="arch-node" tabindex="0" role="button"
+                   aria-label="Application Insights - click for details"
+                   onclick="openDetail('inv-appinsights')" onkeydown="keyDetail(event,'inv-appinsights')">
+                    <rect class="node-box" x="135" y="390" width="120" height="60" rx="14"
+                          fill="rgba(212,181,232,0.2)" stroke="#d4b5e8" stroke-width="2" stroke-dasharray="6,3" />
+                    <text class="node-icon" x="195" y="410">📊</text>
+                    <text class="node-label" x="195" y="430">App Insights</text>
+                    <text class="node-sublabel" x="195" y="443">Monitoring</text>
+                </g>
+            </svg>
+
+            <!-- Legend -->
+            <div class="arch-legend">
+                <div class="legend-item"><div class="legend-dot" style="background:#d4b5e8"></div>App / API Layer</div>
+                <div class="legend-item"><div class="legend-dot" style="background:#c8e6c9"></div>Compute / Async</div>
+                <div class="legend-item"><div class="legend-dot" style="background:#b3e5fc"></div>Data Storage</div>
+                <div class="legend-item"><div class="legend-dot" style="background:#f5c9d4"></div>Security</div>
+                <div class="legend-item"><div class="legend-dot" style="background:#ffe082"></div>AI Services</div>
+            </div>
+        </div>
+
+        <!-- ── Project 2: Cloud Financial App ── -->
+        <div class="arch-diagram" id="diagram-financial" role="tabpanel" aria-labelledby="tab-financial">
+            <svg class="arch-svg" viewBox="0 0 820 460" aria-label="Cloud Financial Application architecture diagram">
+                <defs>
+                    <marker id="arrow2" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+                        <polygon points="0 0, 8 3, 0 6" fill="#d4b5e8" />
+                    </marker>
+                    <marker id="arrow2-green" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+                        <polygon points="0 0, 8 3, 0 6" fill="#c8e6c9" />
+                    </marker>
+                    <marker id="arrow2-blue" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+                        <polygon points="0 0, 8 3, 0 6" fill="#b3e5fc" />
+                    </marker>
+                </defs>
+
+                <!-- Connectors -->
+                <line class="arch-connector" stroke="#d4b5e8" x1="130" y1="80" x2="240" y2="80" marker-end="url(#arrow2)" />
+                <line class="arch-connector" stroke="#d4b5e8" x1="360" y1="80" x2="450" y2="80" marker-end="url(#arrow2)" />
+                <line class="arch-connector" stroke="#c8e6c9" x1="570" y1="80" x2="660" y2="80" marker-end="url(#arrow2-green)" />
+                <line class="arch-connector" stroke="#c8e6c9" x1="300" y1="120" x2="300" y2="195" marker-end="url(#arrow2-green)" />
+                <line class="arch-connector" stroke="#c8e6c9" x1="510" y1="120" x2="510" y2="195" marker-end="url(#arrow2-green)" />
+                <line class="arch-connector" stroke="#b3e5fc" x1="300" y1="255" x2="300" y2="320" marker-end="url(#arrow2-blue)" />
+                <line class="arch-connector" stroke="#b3e5fc" x1="510" y1="255" x2="510" y2="320" marker-end="url(#arrow2-blue)" />
+                <line class="arch-connector" stroke="#d4b5e8" x1="350" y1="360" x2="460" y2="360" marker-end="url(#arrow2)" stroke-dasharray="5,4" />
+                <!-- Hybrid -->
+                <path class="arch-connector" stroke="#f5c9d4" d="M 700 120 Q 760 240 700 360" marker-end="url(#arrow2)" stroke-dasharray="6,4" />
+                <text class="connector-label" x="773" y="240">Hybrid</text>
+                <text class="connector-label" x="773" y="252">VPN/ER</text>
+
+                <!-- Connector labels -->
+                <text class="connector-label" x="190" y="70">HTTPS/TLS</text>
+                <text class="connector-label" x="405" y="70">route</text>
+                <text class="connector-label" x="618" y="70">on-prem</text>
+
+                <!-- NSG boundary box -->
+                <rect x="235" y="155" width="560" height="240" rx="12"
+                      fill="none" stroke="rgba(245,201,212,0.5)" stroke-width="2" stroke-dasharray="8,5" />
+                <text class="connector-label" x="320" y="175" font-size="11" fill="#f5c9d4" font-weight="700">NSG / Network Isolation Boundary</text>
+
+                <!-- Client -->
+                <g class="arch-node" tabindex="0" role="button"
+                   aria-label="Internal Client - click for details"
+                   onclick="openDetail('fin-client')" onkeydown="keyDetail(event,'fin-client')">
+                    <rect class="node-box" x="10" y="50" width="120" height="70" rx="14"
+                          fill="rgba(212,181,232,0.25)" stroke="#d4b5e8" stroke-width="2" />
+                    <text class="node-icon" x="70" y="72">🏢</text>
+                    <text class="node-label" x="70" y="95">Internal</text>
+                    <text class="node-sublabel" x="70" y="110">Client / User</text>
+                </g>
+
+                <!-- Azure App Service -->
+                <g class="arch-node" tabindex="0" role="button"
+                   aria-label="Azure App Service - click for details"
+                   onclick="openDetail('fin-appservice')" onkeydown="keyDetail(event,'fin-appservice')">
+                    <rect class="node-box" x="240" y="50" width="120" height="70" rx="14"
+                          fill="rgba(212,181,232,0.25)" stroke="#d4b5e8" stroke-width="2" />
+                    <text class="node-icon" x="300" y="72">☁️</text>
+                    <text class="node-label" x="300" y="95">Azure App</text>
+                    <text class="node-sublabel" x="300" y="110">Service</text>
+                </g>
+
+                <!-- Microservice A -->
+                <g class="arch-node" tabindex="0" role="button"
+                   aria-label="Transactions Microservice - click for details"
+                   onclick="openDetail('fin-ms-tx')" onkeydown="keyDetail(event,'fin-ms-tx')">
+                    <rect class="node-box" x="450" y="50" width="120" height="70" rx="14"
+                          fill="rgba(200,230,201,0.3)" stroke="#c8e6c9" stroke-width="2" />
+                    <text class="node-icon" x="510" y="72">💱</text>
+                    <text class="node-label" x="510" y="95">Transactions</text>
+                    <text class="node-sublabel" x="510" y="110">Microservice</text>
+                </g>
+
+                <!-- On-Prem / Hybrid -->
+                <g class="arch-node" tabindex="0" role="button"
+                   aria-label="On-Premises System (Hybrid) - click for details"
+                   onclick="openDetail('fin-onprem')" onkeydown="keyDetail(event,'fin-onprem')">
+                    <rect class="node-box" x="660" y="50" width="120" height="70" rx="14"
+                          fill="rgba(255,249,196,0.45)" stroke="#ffe082" stroke-width="2" />
+                    <text class="node-icon" x="720" y="72">🖥️</text>
+                    <text class="node-label" x="720" y="95">On-Premises</text>
+                    <text class="node-sublabel" x="720" y="110">Legacy System</text>
+                </g>
+
+                <!-- Cache -->
+                <g class="arch-node" tabindex="0" role="button"
+                   aria-label="Redis Cache - click for details"
+                   onclick="openDetail('fin-cache')" onkeydown="keyDetail(event,'fin-cache')">
+                    <rect class="node-box" x="250" y="195" width="100" height="60" rx="14"
+                          fill="rgba(212,181,232,0.25)" stroke="#d4b5e8" stroke-width="2" />
+                    <text class="node-icon" x="300" y="214">⚡</text>
+                    <text class="node-label" x="300" y="234">Redis</text>
+                    <text class="node-sublabel" x="300" y="247">Cache</text>
+                </g>
+
+                <!-- Reporting Microservice -->
+                <g class="arch-node" tabindex="0" role="button"
+                   aria-label="Reporting Microservice - click for details"
+                   onclick="openDetail('fin-ms-report')" onkeydown="keyDetail(event,'fin-ms-report')">
+                    <rect class="node-box" x="460" y="195" width="100" height="60" rx="14"
+                          fill="rgba(200,230,201,0.3)" stroke="#c8e6c9" stroke-width="2" />
+                    <text class="node-icon" x="510" y="214">📈</text>
+                    <text class="node-label" x="510" y="234">Reporting</text>
+                    <text class="node-sublabel" x="510" y="247">Microservice</text>
+                </g>
+
+                <!-- SQL Primary -->
+                <g class="arch-node" tabindex="0" role="button"
+                   aria-label="Azure SQL Primary Database - click for details"
+                   onclick="openDetail('fin-sql')" onkeydown="keyDetail(event,'fin-sql')">
+                    <rect class="node-box" x="250" y="320" width="100" height="60" rx="14"
+                          fill="rgba(179,229,252,0.35)" stroke="#b3e5fc" stroke-width="2" />
+                    <text class="node-icon" x="300" y="339">🗄️</text>
+                    <text class="node-label" x="300" y="358">Azure SQL</text>
+                    <text class="node-sublabel" x="300" y="371">Primary DB</text>
+                </g>
+
+                <!-- Blob Storage -->
+                <g class="arch-node" tabindex="0" role="button"
+                   aria-label="Azure Blob Storage - click for details"
+                   onclick="openDetail('fin-blob')" onkeydown="keyDetail(event,'fin-blob')">
+                    <rect class="node-box" x="460" y="320" width="100" height="60" rx="14"
+                          fill="rgba(179,229,252,0.35)" stroke="#b3e5fc" stroke-width="2" />
+                    <text class="node-icon" x="510" y="339">📦</text>
+                    <text class="node-label" x="510" y="358">Blob</text>
+                    <text class="node-sublabel" x="510" y="371">Storage</text>
+                </g>
+
+                <!-- On-prem DB (hybrid) -->
+                <g class="arch-node" tabindex="0" role="button"
+                   aria-label="On-Premises Database (Hybrid Connectivity) - click for details"
+                   onclick="openDetail('fin-onprem-db')" onkeydown="keyDetail(event,'fin-onprem-db')">
+                    <rect class="node-box" x="655" y="320" width="120" height="60" rx="14"
+                          fill="rgba(255,249,196,0.45)" stroke="#ffe082" stroke-width="2" />
+                    <text class="node-icon" x="715" y="339">🏛️</text>
+                    <text class="node-label" x="715" y="358">On-Prem DB</text>
+                    <text class="node-sublabel" x="715" y="371">VPN / ExpressRoute</text>
+                </g>
+            </svg>
+
+            <div class="arch-legend">
+                <div class="legend-item"><div class="legend-dot" style="background:#d4b5e8"></div>Front-End / API</div>
+                <div class="legend-item"><div class="legend-dot" style="background:#c8e6c9"></div>Microservices</div>
+                <div class="legend-item"><div class="legend-dot" style="background:#b3e5fc"></div>Cloud Storage</div>
+                <div class="legend-item"><div class="legend-dot" style="background:#ffe082"></div>Hybrid / On-Prem</div>
+                <div class="legend-item"><div class="legend-dot" style="background:rgba(245,201,212,0.5); border:1px dashed #f5c9d4"></div>NSG Boundary</div>
+            </div>
+        </div>
+
+        <!-- ── Project 3: This Portfolio ── -->
+        <div class="arch-diagram" id="diagram-portfolio" role="tabpanel" aria-labelledby="tab-portfolio">
+            <svg class="arch-svg" viewBox="0 0 820 400" aria-label="Portfolio application architecture diagram">
+                <defs>
+                    <marker id="arrow3" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+                        <polygon points="0 0, 8 3, 0 6" fill="#d4b5e8" />
+                    </marker>
+                    <marker id="arrow3-green" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+                        <polygon points="0 0, 8 3, 0 6" fill="#c8e6c9" />
+                    </marker>
+                    <marker id="arrow3-blue" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+                        <polygon points="0 0, 8 3, 0 6" fill="#b3e5fc" />
+                    </marker>
+                    <marker id="arrow3-pink" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+                        <polygon points="0 0, 8 3, 0 6" fill="#f5c9d4" />
+                    </marker>
+                </defs>
+
+                <!-- Connectors -->
+                <line class="arch-connector" stroke="#d4b5e8" x1="140" y1="100" x2="230" y2="100" marker-end="url(#arrow3)" />
+                <line class="arch-connector" stroke="#d4b5e8" x1="370" y1="100" x2="450" y2="100" marker-end="url(#arrow3)" />
+                <line class="arch-connector" stroke="#c8e6c9" x1="600" y1="100" x2="680" y2="100" marker-end="url(#arrow3-green)" />
+                <line class="arch-connector" stroke="#b3e5fc" x1="310" y1="140" x2="310" y2="220" marker-end="url(#arrow3-blue)" />
+                <line class="arch-connector" stroke="#c8e6c9" x1="520" y1="140" x2="520" y2="220" marker-end="url(#arrow3-green)" />
+                <!-- CI/CD pipeline -->
+                <path class="arch-connector" stroke="#d4b5e8" d="M 85 55 Q 85 20 310 20 Q 535 20 535 55" marker-end="url(#arrow3)" stroke-dasharray="5,4" />
+                <text class="connector-label" x="310" y="15">GitHub Actions CI/CD Pipeline</text>
+
+                <!-- Connector labels -->
+                <text class="connector-label" x="185" y="90">HTTPS</text>
+                <text class="connector-label" x="410" y="90">API call</text>
+                <text class="connector-label" x="643" y="90">streams</text>
+                <text class="connector-label" x="326" y="180">download</text>
+
+                <!-- Visitor -->
+                <g class="arch-node" tabindex="0" role="button"
+                   aria-label="Visitor / Browser - click for details"
+                   onclick="openDetail('port-visitor')" onkeydown="keyDetail(event,'port-visitor')">
+                    <rect class="node-box" x="10" y="65" width="130" height="70" rx="14"
+                          fill="rgba(212,181,232,0.25)" stroke="#d4b5e8" stroke-width="2" />
+                    <text class="node-icon" x="75" y="87">🌐</text>
+                    <text class="node-label" x="75" y="110">Visitor</text>
+                    <text class="node-sublabel" x="75" y="124">Browser / Device</text>
+                </g>
+
+                <!-- Azure Web App -->
+                <g class="arch-node" tabindex="0" role="button"
+                   aria-label="Azure Web App Service (ASP.NET Core) - click for details"
+                   onclick="openDetail('port-webapp')" onkeydown="keyDetail(event,'port-webapp')">
+                    <rect class="node-box" x="230" y="65" width="140" height="70" rx="14"
+                          fill="rgba(212,181,232,0.25)" stroke="#d4b5e8" stroke-width="2" />
+                    <text class="node-icon" x="300" y="87">🌸</text>
+                    <text class="node-label" x="300" y="110">Azure Web App</text>
+                    <text class="node-sublabel" x="300" y="124">ASP.NET Core 8</text>
+                </g>
+
+                <!-- Claude AI API -->
+                <g class="arch-node" tabindex="0" role="button"
+                   aria-label="Claude AI (Anthropic) API - click for details"
+                   onclick="openDetail('port-claude')" onkeydown="keyDetail(event,'port-claude')">
+                    <rect class="node-box" x="450" y="65" width="150" height="70" rx="14"
+                          fill="rgba(255,249,196,0.45)" stroke="#ffe082" stroke-width="2" />
+                    <text class="node-icon" x="525" y="87">🤖</text>
+                    <text class="node-label" x="525" y="110">Claude AI</text>
+                    <text class="node-sublabel" x="525" y="124">Anthropic API</text>
+                </g>
+
+                <!-- Streaming response -->
+                <g class="arch-node" tabindex="0" role="button"
+                   aria-label="Server-Sent Events Streaming - click for details"
+                   onclick="openDetail('port-sse')" onkeydown="keyDetail(event,'port-sse')">
+                    <rect class="node-box" x="680" y="65" width="120" height="70" rx="14"
+                          fill="rgba(200,230,201,0.3)" stroke="#c8e6c9" stroke-width="2" />
+                    <text class="node-icon" x="740" y="87">📡</text>
+                    <text class="node-label" x="740" y="110">Streaming</text>
+                    <text class="node-sublabel" x="740" y="124">SSE Response</text>
+                </g>
+
+                <!-- Azure File Storage -->
+                <g class="arch-node" tabindex="0" role="button"
+                   aria-label="Azure File Storage - click for details"
+                   onclick="openDetail('port-filestorage')" onkeydown="keyDetail(event,'port-filestorage')">
+                    <rect class="node-box" x="240" y="220" width="140" height="60" rx="14"
+                          fill="rgba(179,229,252,0.35)" stroke="#b3e5fc" stroke-width="2" />
+                    <text class="node-icon" x="310" y="240">📁</text>
+                    <text class="node-label" x="310" y="260">Azure File</text>
+                    <text class="node-sublabel" x="310" y="273">Storage (Resume)</text>
+                </g>
+
+                <!-- Azure Key Vault -->
+                <g class="arch-node" tabindex="0" role="button"
+                   aria-label="Azure Key Vault (Secrets) - click for details"
+                   onclick="openDetail('port-keyvault')" onkeydown="keyDetail(event,'port-keyvault')">
+                    <rect class="node-box" x="460" y="220" width="120" height="60" rx="14"
+                          fill="rgba(245,201,212,0.35)" stroke="#f5c9d4" stroke-width="2" />
+                    <text class="node-icon" x="520" y="240">🔑</text>
+                    <text class="node-label" x="520" y="260">Key Vault</text>
+                    <text class="node-sublabel" x="520" y="273">API Keys / Secrets</text>
+                </g>
+
+                <!-- App Insights -->
+                <g class="arch-node" tabindex="0" role="button"
+                   aria-label="Application Insights Monitoring - click for details"
+                   onclick="openDetail('port-appinsights')" onkeydown="keyDetail(event,'port-appinsights')">
+                    <rect class="node-box" x="240" y="320" width="140" height="60" rx="14"
+                          fill="rgba(212,181,232,0.2)" stroke="#d4b5e8" stroke-width="2" stroke-dasharray="6,3" />
+                    <text class="node-icon" x="310" y="340">📊</text>
+                    <text class="node-label" x="310" y="360">App Insights</text>
+                    <text class="node-sublabel" x="310" y="373">Telemetry & Monitoring</text>
+                </g>
+
+                <line class="arch-connector" stroke="#d4b5e8" x1="310" y1="280" x2="310" y2="320" marker-end="url(#arrow3)" stroke-dasharray="4,4" opacity="0.5" />
+                <line class="arch-connector" stroke="#f5c9d4" x1="520" y1="140" x2="520" y2="220" marker-end="url(#arrow3-pink)" stroke-dasharray="4,4" />
+            </svg>
+
+            <div class="arch-legend">
+                <div class="legend-item"><div class="legend-dot" style="background:#d4b5e8"></div>Web / API Layer</div>
+                <div class="legend-item"><div class="legend-dot" style="background:#ffe082"></div>AI Service</div>
+                <div class="legend-item"><div class="legend-dot" style="background:#b3e5fc"></div>Storage</div>
+                <div class="legend-item"><div class="legend-dot" style="background:#f5c9d4"></div>Security</div>
+                <div class="legend-item"><div class="legend-dot" style="background:#c8e6c9"></div>Real-Time / Streaming</div>
+            </div>
+        </div>
+
+        <p class="click-hint"><i class="fas fa-mouse-pointer"></i> Click any component to explore the technology, design decisions, and engineering story</p>
+    </div>
+</div>
+
+<!-- ── Detail Panel Overlay ── -->
+<div class="detail-overlay" id="detailOverlay" role="dialog" aria-modal="true" aria-labelledby="detailTitle"
+     onclick="closeDetailOnBackdrop(event)">
+    <div class="detail-panel" id="detailPanel">
+        <button class="detail-close" onclick="closeDetail()" aria-label="Close detail panel">
+            <i class="fas fa-times"></i>
+        </button>
+        <span class="detail-icon" id="detailIcon" aria-hidden="true"></span>
+        <div class="detail-category" id="detailCategory"></div>
+        <div class="detail-title" id="detailTitle"></div>
+
+        <div class="detail-section">
+            <h4><i class="fas fa-layer-group"></i> Technologies Used</h4>
+            <div class="tech-pills" id="detailTech"></div>
+        </div>
+
+        <div class="detail-section">
+            <h4><i class="fas fa-lightbulb"></i> Why I Chose This</h4>
+            <p id="detailWhy"></p>
+        </div>
+
+        <div class="detail-section">
+            <h4><i class="fas fa-road"></i> Challenge → Solution</h4>
+            <div class="challenge-story" id="detailStory"></div>
+        </div>
+
+        <div class="detail-section" id="detailLinksSection">
+            <h4><i class="fas fa-code"></i> Code &amp; Resources</h4>
+            <div id="detailLinks"></div>
+        </div>
+    </div>
+</div>
+
+<script>
+/* ══════════════════════════════════════════════
+   Architecture Map — Component Data
+═══════════════════════════════════════════════ */
+const componentData = {
+
+    /* ── AI Inventory System ── */
+    'inv-client': {
+        icon: '💻', category: 'Front-End Layer',
+        title: 'Client Application',
+        tech: ['React', 'TypeScript', 'Bootstrap 5', 'REST API'],
+        why: 'React\'s component model and one-way data flow make it ideal for real-time inventory dashboards that need to reflect frequent state changes without full-page reloads.',
+        story: '<strong>Challenge:</strong> Inventory tables with thousands of SKUs had to update in near-real-time without degrading browser performance.<br><br><strong>Solution:</strong> Implemented virtualized list rendering and debounced polling against the Azure Functions API, keeping render times under 16 ms regardless of data size.',
+        links: []
+    },
+    'inv-apim': {
+        icon: '🌐', category: 'API / Gateway Layer',
+        title: 'Azure App Service / APIM',
+        tech: ['Azure App Service', 'ASP.NET Core 8', 'Azure API Management', 'OAuth 2.0'],
+        why: 'Azure App Service provides a fully-managed, horizontally scalable host for ASP.NET Core. Pairing it with APIM gives us throttling, authentication, and a clean versioned API contract with zero additional infrastructure.',
+        story: '<strong>Challenge:</strong> Multiple internal teams needed access to the inventory API, each with different rate limits and auth requirements.<br><br><strong>Solution:</strong> Added Azure API Management as a facade. Each team got a named subscription key with its own usage policy—no code changes required in the backend application.',
+        links: [{ label: 'Azure App Service Docs', url: 'https://learn.microsoft.com/azure/app-service/' }]
+    },
+    'inv-functions': {
+        icon: '⚡', category: 'Serverless Compute',
+        title: 'Azure Functions',
+        tech: ['Azure Functions v4', 'C# Isolated Worker', 'HTTP Trigger', 'Queue Trigger', 'Managed Identity'],
+        why: 'Serverless functions eliminate idle-cost overhead for bursty workloads. Azure Functions\' scale-to-zero model perfectly matches inventory batch jobs that only run during business hours.',
+        story: '<strong>Challenge:</strong> Nightly inventory reconciliation took 40+ minutes running in-process on the App Service, occasionally timing out and blocking other requests.<br><br><strong>Solution:</strong> Extracted reconciliation into a durable Azure Function orchestration. Fan-out/fan-in processing cut the wall-clock time to under 6 minutes and freed the App Service for user traffic.',
+        links: [{ label: 'Azure Functions Docs', url: 'https://learn.microsoft.com/azure/azure-functions/' }]
+    },
+    'inv-copilot': {
+        icon: '🤖', category: 'AI Layer',
+        title: 'Copilot Agent',
+        tech: ['Microsoft Copilot Studio', 'Azure OpenAI Service', 'LLM (GPT-4)', 'Prompt Engineering', 'Power Automate'],
+        why: 'Microsoft\'s Copilot platform provides grounding, retrieval, and safety guardrails that a raw LLM integration would require us to build and maintain ourselves. It also offers a no-code connector path that saved weeks of integration work.',
+        story: '<strong>Challenge:</strong> Procurement staff wanted to ask natural-language questions about stock levels ("Do we have enough widgets to cover next week\'s orders?") without learning SQL or BI tools.<br><br><strong>Solution:</strong> Built a Copilot Agent grounded against the inventory database via a custom connector. The agent translates intent to parameterized SQL, executes it, and responds in plain English—no custom NLU pipeline required.',
+        links: []
+    },
+    'inv-servicebus': {
+        icon: '📨', category: 'Async Messaging',
+        title: 'Azure Service Bus',
+        tech: ['Azure Service Bus', 'Standard Queue', 'Dead-Letter Queue', 'At-Least-Once Delivery', 'Message Sessions'],
+        why: 'Service Bus decouples producers from consumers, enabling horizontal scaling of the processor without any changes to the Functions that enqueue work. Dead-letter queue support means no silent failures.',
+        story: '<strong>Challenge:</strong> High-volume flash sales caused thousands of inventory-update events in seconds, overwhelming direct DB writes and causing lock contention.<br><br><strong>Solution:</strong> Introduced a Service Bus queue as a buffer. Processor functions consume at their own pace with batching enabled, eliminating lock contention and providing a retry/DLQ safety net for transient failures.',
+        links: [{ label: 'Service Bus Docs', url: 'https://learn.microsoft.com/azure/service-bus-messaging/' }]
+    },
+    'inv-processor': {
+        icon: '🔄', category: 'Serverless Compute',
+        title: 'Inventory Processor',
+        tech: ['Azure Functions', 'Queue Trigger', 'C#', 'Entity Framework Core', 'Polly (Retry)'],
+        why: 'A dedicated processor function keeps the reconciliation logic isolated from the user-facing API, enabling independent deployment and scaling of each concern.',
+        story: '<strong>Challenge:</strong> Transient Azure SQL timeouts during batch writes caused partial updates that were difficult to detect and roll back.<br><br><strong>Solution:</strong> Wrapped each batch in a database transaction and added Polly-based exponential retry. A dead-letter handler surfaces persistent failures to an operations dashboard for manual review.',
+        links: []
+    },
+    'inv-sql': {
+        icon: '🗄️', category: 'Data Layer',
+        title: 'Azure SQL Database',
+        tech: ['Azure SQL Database', 'T-SQL', 'Entity Framework Core', 'Read Replicas', 'Geo-Redundant Backup'],
+        why: 'Azure SQL provides ACID guarantees essential for inventory accuracy, built-in high availability, and seamless EF Core integration. Geo-redundant backups meet RPO requirements without custom scripts.',
+        story: '<strong>Challenge:</strong> Reporting queries running against the operational database were degrading write performance for inventory updates.<br><br><strong>Solution:</strong> Enabled a read replica and directed the Reporting microservice to the secondary endpoint. Write latency dropped by 35% and report generation times halved.',
+        links: [{ label: 'Azure SQL Docs', url: 'https://learn.microsoft.com/azure/azure-sql/' }]
+    },
+    'inv-keyvault': {
+        icon: '🔑', category: 'Security',
+        title: 'Azure Key Vault',
+        tech: ['Azure Key Vault', 'Managed Identity', 'Secret Rotation', 'Azure Policy'],
+        why: 'Key Vault eliminates hardcoded secrets from source code and configuration files. Managed Identity means zero credentials are ever stored in the application—access is granted via Azure AD token exchange.',
+        story: '<strong>Challenge:</strong> A security audit flagged connection strings stored in Azure App Configuration as insufficiently protected.<br><br><strong>Solution:</strong> Migrated all secrets to Key Vault and assigned the app a system-assigned Managed Identity. No developers have read access to production secrets; all access is audited in the Key Vault diagnostic logs.',
+        links: [{ label: 'Key Vault Docs', url: 'https://learn.microsoft.com/azure/key-vault/' }]
+    },
+    'inv-appinsights': {
+        icon: '📊', category: 'Observability',
+        title: 'Application Insights',
+        tech: ['Azure Application Insights', 'Log Analytics Workspace', 'KQL', 'Live Metrics', 'Availability Tests'],
+        why: 'Application Insights provides distributed tracing across Functions, App Service, and the database with a single SDK. The correlation ID propagation is automatic, making cross-component debugging straightforward.',
+        story: '<strong>Challenge:</strong> Intermittent slowdowns were hard to diagnose because logs across services lacked a shared transaction context.<br><br><strong>Solution:</strong> Enabled distributed tracing with a shared instrumentation key across all services. The Application Map in Azure Monitor now visualises the entire call chain, and I set up proactive failure alerts that page the on-call engineer within 2 minutes.',
+        links: [{ label: 'App Insights Docs', url: 'https://learn.microsoft.com/azure/azure-monitor/app/app-insights-overview' }]
+    },
+
+    /* ── Cloud Financial App ── */
+    'fin-client': {
+        icon: '🏢', category: 'Front-End Layer',
+        title: 'Internal Client / User',
+        tech: ['Azure AD Authentication', 'MFA', 'Conditional Access', 'RBAC'],
+        why: 'Financial applications require identity-based access control. Azure AD with Conditional Access policies ensures only authenticated, compliant devices on the corporate network can reach the application.',
+        story: '<strong>Challenge:</strong> After a cloud migration, the security team required the same network-based access controls that existed on-premises.<br><br><strong>Solution:</strong> Integrated Azure AD Conditional Access with Named Locations and compliant device policies, replicating on-prem access gates in a cloud-native, auditable way.',
+        links: []
+    },
+    'fin-appservice': {
+        icon: '☁️', category: 'Web / API Layer',
+        title: 'Azure App Service',
+        tech: ['Azure App Service', 'ASP.NET Core 8', 'VNet Integration', 'Private Endpoint', 'TLS 1.2+'],
+        why: 'App Service VNet Integration restricts all outbound traffic to the private virtual network, satisfying the financial compliance requirement that no data traverses the public internet.',
+        story: '<strong>Challenge:</strong> A PCI-DSS gap assessment identified that the original deployment had the App Service communicating over public endpoints to the database.<br><br><strong>Solution:</strong> Enabled VNet Integration on the App Service and added Private Endpoints for Azure SQL and Blob Storage. All traffic now stays on Microsoft\'s private backbone, and the next gap assessment came back clean.',
+        links: []
+    },
+    'fin-ms-tx': {
+        icon: '💱', category: 'Microservices',
+        title: 'Transactions Microservice',
+        tech: ['ASP.NET Core', 'MediatR (CQRS)', 'Dapper', 'Azure SQL', 'OpenTelemetry'],
+        why: 'Separating the transactions domain into its own microservice allowed independent deployment schedules and isolated blast radius for failures. CQRS via MediatR keeps commands and queries clearly separated.',
+        story: '<strong>Challenge:</strong> The original monolith mixed transaction processing with reporting logic, causing long test cycles and high risk on every release.<br><br><strong>Solution:</strong> Extracted the domain into a self-contained microservice. Automated contract tests validate the API boundary, reducing deployment risk and cutting regression test time by 60%.',
+        links: []
+    },
+    'fin-onprem': {
+        icon: '🖥️', category: 'Hybrid Connectivity',
+        title: 'On-Premises Legacy System',
+        tech: ['Azure ExpressRoute', 'VPN Gateway', 'On-Premises SQL Server', 'Hybrid Connection'],
+        why: 'The on-premises system holds decades of historical transaction data that could not be migrated within the project timeline. Hybrid connectivity via ExpressRoute provides dedicated, low-latency access without exposing the legacy system to the internet.',
+        story: '<strong>Challenge:</strong> Regulatory requirements mandated 7-year retention of historical records that lived in an on-premises SQL Server that couldn\'t be decommissioned.<br><br><strong>Solution:</strong> Established an ExpressRoute circuit to the data centre and wrapped the legacy database with a thin read-only API service. Cloud microservices query this API for historical data, abstracting the on-prem dependency.',
+        links: [{ label: 'ExpressRoute Docs', url: 'https://learn.microsoft.com/azure/expressroute/' }]
+    },
+    'fin-cache': {
+        icon: '⚡', category: 'Caching Layer',
+        title: 'Redis Cache',
+        tech: ['Azure Cache for Redis', 'Cache-Aside Pattern', 'TTL Policies', 'Serialization (JSON)'],
+        why: 'Redis cuts repeated database reads for reference data (accounts, currencies, rates) that rarely changes. The cache-aside pattern keeps the code simple while dramatically improving read throughput.',
+        story: '<strong>Challenge:</strong> Account lookup queries were the top source of database load, accounting for 45% of all reads despite the data changing only once per hour.<br><br><strong>Solution:</strong> Added Azure Cache for Redis with a 5-minute TTL for account data. Database read load dropped by 41% within 24 hours of deployment.',
+        links: []
+    },
+    'fin-ms-report': {
+        icon: '📈', category: 'Microservices',
+        title: 'Reporting Microservice',
+        tech: ['ASP.NET Core', 'Azure SQL Read Replica', 'Dapper', 'CSV / Excel Export', 'Background Workers'],
+        why: 'Isolating reporting into its own microservice targeting the SQL read replica ensures complex reporting queries never compete with transactional writes, protecting SLA for the critical path.',
+        story: '<strong>Challenge:</strong> Monthly close reports took 20+ minutes to generate and frequently timed out, blocking finance staff on deadline.<br><br><strong>Solution:</strong> Moved report generation to a background worker that streams results to Azure Blob Storage. Finance staff receive a download link by email when the report is ready, eliminating the timeout problem entirely.',
+        links: []
+    },
+    'fin-sql': {
+        icon: '🗄️', category: 'Data Layer',
+        title: 'Azure SQL — Primary DB',
+        tech: ['Azure SQL Database', 'Business Critical Tier', 'Always Encrypted', 'Transparent Data Encryption', 'Geo-Replication'],
+        why: 'The Business Critical service tier provides in-memory OLTP for high-throughput transaction writes and a built-in read replica, all while meeting financial compliance requirements for encryption at rest and in transit.',
+        story: '<strong>Challenge:</strong> Compliance required encryption of PII fields (names, account numbers) such that even DBAs with full SQL access couldn\'t read plaintext values.<br><br><strong>Solution:</strong> Implemented Always Encrypted with column master keys stored in Azure Key Vault. Encryption and decryption happen exclusively in the application layer—the database never sees plaintext sensitive data.',
+        links: []
+    },
+    'fin-blob': {
+        icon: '📦', category: 'Data Layer',
+        title: 'Azure Blob Storage',
+        tech: ['Azure Blob Storage', 'Private Endpoint', 'Lifecycle Policies', 'SAS Tokens', 'CORS'],
+        why: 'Blob Storage is cost-effective for large report files and audit logs. Lifecycle policies automatically tier or delete data to meet retention obligations without manual intervention.',
+        story: '<strong>Challenge:</strong> Generated reports and audit exports were being stored on the App Service\'s local disk, causing disk-full errors and data loss on restarts.<br><br><strong>Solution:</strong> Redirected all file output to Azure Blob Storage with a Private Endpoint. Lifecycle management policies auto-archive files to cool tier after 30 days, reducing storage costs by ~70%.',
+        links: []
+    },
+    'fin-onprem-db': {
+        icon: '🏛️', category: 'Hybrid Connectivity',
+        title: 'On-Premises Database',
+        tech: ['SQL Server 2019', 'Azure VPN Gateway', 'ExpressRoute', 'Read-Only Replica', 'SSMS'],
+        why: 'Maintaining the on-premises SQL Server during the migration period was a business necessity. VPN Gateway provided an encrypted tunnel for secure access while the long-term migration plan was executed.',
+        story: '<strong>Challenge:</strong> Data centre acquisition introduced a 6-month window where the on-premises database had to serve both legacy on-prem apps and new cloud microservices simultaneously.<br><br><strong>Solution:</strong> Planned and executed the hybrid connectivity setup including VPN Gateway configuration, routing table updates, and NSG rules. Both environments operated reliably for the full 6-month transition period with zero connectivity incidents.',
+        links: []
+    },
+
+    /* ── Portfolio ── */
+    'port-visitor': {
+        icon: '🌐', category: 'Client Layer',
+        title: 'Visitor / Browser',
+        tech: ['HTML5', 'CSS3', 'Bootstrap 5', 'Vanilla JavaScript', 'Fetch API', 'Server-Sent Events'],
+        why: 'No framework overhead — the portfolio is content-first and should load fast on any device. Bootstrap 5 provides responsive layout with minimal custom CSS, and Vanilla JS keeps the bundle size to zero.',
+        story: '<strong>Challenge:</strong> Making the AI chat feel responsive on a slow connection without a heavy frontend framework.<br><br><strong>Solution:</strong> Used the Fetch API with streaming response handling so the AI reply text appears word-by-word as it arrives, giving immediate feedback without waiting for the full response.',
+        links: [{ label: 'View Source on GitHub', url: 'https://github.com/monicarivera-work/monicarivera_portfolio_demo' }]
+    },
+    'port-webapp': {
+        icon: '🌸', category: 'Web Application',
+        title: 'Azure Web App — ASP.NET Core 8',
+        tech: ['ASP.NET Core 8', 'Razor Pages', 'C# 12', 'Dependency Injection', 'Azure Web App Service'],
+        why: 'Razor Pages offer a clean page-centric model that maps naturally to a portfolio\'s page structure. ASP.NET Core\'s built-in DI, configuration, and logging make it easy to wire up Azure services cleanly.',
+        story: '<strong>Challenge:</strong> Keeping secrets (API keys, connection strings) out of source control while making them easy to inject at runtime in Azure.<br><br><strong>Solution:</strong> Used ASP.NET Core\'s configuration system backed by Azure Key Vault and App Service Application Settings. Local development uses user-secrets; production reads from Key Vault via Managed Identity—same code, zero secrets in Git.',
+        links: [{ label: 'GitHub Repository', url: 'https://github.com/monicarivera-work/monicarivera_portfolio_demo' }]
+    },
+    'port-claude': {
+        icon: '🤖', category: 'AI Service',
+        title: 'Claude AI (Anthropic)',
+        tech: ['Claude 3 Haiku / Sonnet', 'Anthropic Messages API', 'System Prompt Engineering', 'HttpClient', 'JSON Streaming'],
+        why: 'Claude was chosen for its strong instruction-following, safe output style, and transparent API pricing. The Haiku model provides low-latency responses (under 500 ms to first token) ideal for a chat experience.',
+        story: '<strong>Challenge:</strong> Making the AI stay on-topic about Monica\'s background without hallucinating fabricated credentials or job history.<br><br><strong>Solution:</strong> Engineered a detailed system prompt that grounds the model with factual information about Monica\'s skills and experience. The prompt explicitly instructs the model to say "I don\'t know" rather than guess—keeping all responses accurate and on-brand.',
+        links: [{ label: 'Anthropic API Docs', url: 'https://docs.anthropic.com' }]
+    },
+    'port-sse': {
+        icon: '📡', category: 'Real-Time Streaming',
+        title: 'Server-Sent Events (Streaming)',
+        tech: ['Server-Sent Events', 'IAsyncEnumerable', 'HttpResponse.WriteAsync', 'Content-Type: text/event-stream'],
+        why: 'SSE is lighter than WebSockets for unidirectional streaming — no handshake overhead, works over standard HTTP/2, and reconnects automatically. Perfect for AI response streaming.',
+        story: '<strong>Challenge:</strong> A full AI response (200-400 tokens) takes 2–4 seconds to generate. A blocking HTTP response felt sluggish and made users uncertain whether the app was working.<br><br><strong>Solution:</strong> Implemented streaming using Server-Sent Events in the ASP.NET Core controller and an EventSource listener on the client. The first word of the response appears within ~300 ms, making the chat feel instant.',
+        links: []
+    },
+    'port-filestorage': {
+        icon: '📁', category: 'Storage',
+        title: 'Azure File Storage',
+        tech: ['Azure Files', 'Azure SDK for .NET', 'ShareClient', 'SAS Token', 'Stream Download'],
+        why: 'Azure Files provides a managed SMB/REST file share accessible from the App Service without deploying or maintaining any infrastructure. Resume files can be updated by uploading to the share—no code deploy needed.',
+        story: '<strong>Challenge:</strong> Resume downloads needed to serve a current file without requiring a code deployment every time the resume is updated.<br><br><strong>Solution:</strong> Stored the resume in an Azure File Share. A file name environment variable controls which file is served. Updating the resume is as simple as uploading a new file and changing one App Setting—zero downtime, zero deployment.',
+        links: []
+    },
+    'port-keyvault': {
+        icon: '🔑', category: 'Security',
+        title: 'Azure Key Vault',
+        tech: ['Azure Key Vault', 'Managed Identity', 'Microsoft.Extensions.Configuration.AzureKeyVault', 'Secret References'],
+        why: 'The Anthropic API key and Azure storage connection string are sensitive secrets that must never appear in code or logs. Key Vault with Managed Identity provides a zero-credential-in-code secret management strategy.',
+        story: '<strong>Challenge:</strong> During early development, the Anthropic API key was accidentally included in an application settings file that was nearly committed to the public repository.<br><br><strong>Solution:</strong> Immediately rotated the key and migrated all secrets to Azure Key Vault. CI/CD pipelines now use a secret scanner step that blocks any commit containing patterns matching API keys or connection strings.',
+        links: []
+    },
+    'port-appinsights': {
+        icon: '📊', category: 'Observability',
+        title: 'Application Insights',
+        tech: ['Azure Application Insights', 'JavaScript SDK', 'Page View Tracking', 'Custom Events', 'Availability Tests'],
+        why: 'Application Insights provides both server-side and client-side telemetry in one dashboard. The JavaScript SDK enables me to track which portfolio sections visitors engage with, informing future content decisions.',
+        story: '<strong>Challenge:</strong> No visibility into whether visitors were finding the AI chat feature or dropping off at the home page.<br><br><strong>Solution:</strong> Added custom Application Insights events for key interactions (chat started, resume downloaded, page time-on-page). The resulting data showed 70% of visitors reached the AI chat—validating that the navigation placement was working.',
+        links: []
+    }
+};
+
+/* ══════════════════════════════════════════════
+   UI Logic
+═══════════════════════════════════════════════ */
+function switchProject(id, btn) {
+    // Update tabs
+    document.querySelectorAll('.project-tab').forEach(t => {
+        t.classList.remove('active');
+        t.setAttribute('aria-selected', 'false');
+    });
+    btn.classList.add('active');
+    btn.setAttribute('aria-selected', 'true');
+
+    // Update diagrams
+    document.querySelectorAll('.arch-diagram').forEach(d => d.classList.remove('active'));
+    const target = document.getElementById('diagram-' + id);
+    if (target) target.classList.add('active');
+}
+
+function openDetail(id) {
+    const d = componentData[id];
+    if (!d) return;
+
+    document.getElementById('detailIcon').textContent = d.icon;
+    document.getElementById('detailCategory').textContent = d.category;
+    document.getElementById('detailTitle').textContent = d.title;
+
+    // Tech pills
+    const techEl = document.getElementById('detailTech');
+    techEl.innerHTML = '';
+    d.tech.forEach(t => {
+        const pill = document.createElement('span');
+        pill.className = 'tech-pill';
+        pill.textContent = t;
+        techEl.appendChild(pill);
+    });
+
+    document.getElementById('detailWhy').textContent = d.why;
+    document.getElementById('detailStory').innerHTML = d.story;
+
+    // Links
+    const linksSection = document.getElementById('detailLinksSection');
+    const linksEl = document.getElementById('detailLinks');
+    if (d.links && d.links.length > 0) {
+        linksEl.innerHTML = '';
+        d.links.forEach(l => {
+            const a = document.createElement('a');
+            a.href = l.url;
+            a.target = '_blank';
+            a.rel = 'noopener noreferrer';
+            a.className = 'detail-link me-3';
+            a.innerHTML = '<i class="fas fa-external-link-alt"></i> ' + l.label;
+            linksEl.appendChild(a);
+        });
+        linksSection.style.display = '';
+    } else {
+        linksSection.style.display = 'none';
+    }
+
+    const overlay = document.getElementById('detailOverlay');
+    overlay.classList.add('open');
+    overlay.querySelector('.detail-close').focus();
+    document.body.style.overflow = 'hidden';
+}
+
+function closeDetail() {
+    document.getElementById('detailOverlay').classList.remove('open');
+    document.body.style.overflow = '';
+}
+
+function closeDetailOnBackdrop(e) {
+    if (e.target === document.getElementById('detailOverlay')) {
+        closeDetail();
+    }
+}
+
+function keyDetail(e, id) {
+    if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        openDetail(id);
+    }
+}
+
+// Close on Escape key
+document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') closeDetail();
+});
+</script>
