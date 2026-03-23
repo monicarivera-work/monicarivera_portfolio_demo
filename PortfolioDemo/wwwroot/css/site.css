@@ -120,6 +120,28 @@ body {
   .experience-item {
     margin-bottom: 1.5rem;
   }
+
+  /* Navbar: ensure dark mode toggle is accessible */
+  .dark-mode-btn {
+    width: 2.25rem;
+    height: 2.25rem;
+  }
+
+  /* Chat window: reduce fixed height on mobile */
+  .chat-window {
+    height: 55vh !important;
+    min-height: 280px;
+  }
+
+  /* Architecture map: full-width project tabs */
+  .project-tabs {
+    gap: 0.4rem;
+  }
+
+  .project-tab {
+    font-size: 0.82rem;
+    padding: 6px 14px;
+  }
 }
 
 /* Scrollbar styling - Spring Pastels */
