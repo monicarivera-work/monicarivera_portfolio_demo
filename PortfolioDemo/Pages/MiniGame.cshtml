@@ -96,6 +96,7 @@
             btnBg    : 'linear-gradient(135deg,#d4b5e8,#f5c9d4)',
             btnText  : '#4a3060',
             floorLine: dark ? 'rgba(180,143,216,0.25)'      : 'rgba(180,143,216,0.3)',
+            hintText : dark ? 'rgba(220,190,240,0.85)'      : 'rgba(180,143,216,0.85)',
         };
     }
 
@@ -113,6 +114,7 @@
     const GRAVITY    = 0.55;
     const JUMP_SPEED = -10;      /* velocity when gravity flips */
     const BASE_SPEED = 3.2;
+    const GRACE_DURATION = 7;   /* seconds of safe runway at game start */
 
     /* ── State ── */
     let state      = 'intro';   /* intro | playing | gameover */
@@ -120,6 +122,7 @@
     let highScore  = 0;
     let speed      = BASE_SPEED;
     let frameCount = 0;
+    let gracePhase = false;     /* true during the safe runway at game start */
     let raf        = null;
 
     /* Player */
@@ -151,6 +154,7 @@
         score      = 0;
         speed      = BASE_SPEED;
         frameCount = 0;
+        gracePhase = true;
         particles  = [];
 
         player = {
@@ -169,6 +173,12 @@
     }
 
     function seedPlatforms() {
+        if (gracePhase) {
+            /* Solid, gap-free surfaces covering the full visible area + buffer */
+            platforms.push({ x: 0, y: GROUND_Y,          w: W + 600, side: 'floor' });
+            platforms.push({ x: 0, y: CEIL_Y - PLAT_H,   w: W + 600, side: 'ceil'  });
+            return;
+        }
         /* Create floor platforms covering the visible area */
         let x = 0;
         while (x < W + 200) {
@@ -262,10 +272,11 @@
     function spawnMorePlatforms() {
         ['floor', 'ceil'].forEach(function (side) {
             while (getLastX(side) < W + 400) {
-                const pw  = rand(PLAT_MIN, PLAT_MAX);
-                const gx  = rand(GAP_MIN, GAP_MAX);
+                const pw    = rand(PLAT_MIN, PLAT_MAX);
                 const lastX = getLastX(side);
-                const y   = side === 'floor' ? GROUND_Y : CEIL_Y - PLAT_H;
+                const y     = side === 'floor' ? GROUND_Y : CEIL_Y - PLAT_H;
+                /* No gap during grace phase — extend the surface seamlessly */
+                const gx    = gracePhase ? 0 : rand(GAP_MIN, GAP_MAX);
                 platforms.push({ x: lastX + gx, y, w: pw, side });
             }
         });
@@ -275,6 +286,11 @@
     function update() {
         frameCount++;
         score++;
+
+        /* Grace phase: flip to normal gameplay after GRACE_DURATION seconds */
+        if (gracePhase && frameCount / 60 >= GRACE_DURATION) {
+            gracePhase = false;
+        }
 
         /* Speed ramp */
         speed = BASE_SPEED + (frameCount / 600);
@@ -322,8 +338,14 @@
 
         /* Game over: player exits canvas vertically */
         if (player.y > H + 20 || player.y < -PLAYER_H - 20) {
-            endGame();
-            return;
+            if (gracePhase) {
+                /* Clamp the player back to a safe position during the grace phase */
+                player.y  = player.grav === 1 ? GROUND_Y - PLAYER_H : CEIL_Y;
+                player.vy = 0;
+            } else {
+                endGame();
+                return;
+            }
         }
 
         updateParticles();
@@ -497,6 +519,24 @@
         drawParticles(p);
         drawPlayer(p);
         drawHUD(p);
+        if (gracePhase) { drawGraceHint(p); }
+    }
+
+    /* ── Grace-phase hint ── */
+    function drawGraceHint(p) {
+        const elapsed   = frameCount / 60;
+        const fadeStart = GRACE_DURATION - 1;
+        const alpha     = elapsed > fadeStart
+            ? Math.max(0, 1 - (elapsed - fadeStart))
+            : 1;
+
+        ctx.globalAlpha = alpha;
+        ctx.fillStyle   = p.hintText;
+        ctx.font        = "13px 'Lato', sans-serif";
+        ctx.textAlign   = 'center';
+        ctx.fillText('Get ready… gaps start soon! \uD83C\uDF38', W / 2, 50);
+        ctx.textAlign   = 'left';
+        ctx.globalAlpha = 1;
     }
 
     function drawGameOver(p) {
