@@ -21,6 +21,8 @@ if (!app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 app.UseStaticFiles();
 
+app.UseMiddleware<PortfolioDemo.Middleware.VisitorLoggingMiddleware>();
+
 app.UseRouting();
 
 app.UseAuthorization();
