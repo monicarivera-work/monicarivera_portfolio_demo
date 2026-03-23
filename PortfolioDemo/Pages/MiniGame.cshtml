@@ -116,10 +116,31 @@
     const BASE_SPEED = 3.2;
     const GRACE_DURATION = 7;   /* seconds of safe runway at game start */
 
+    /* ── Persistence ── */
+    const LS_KEY = 'gravityFlip_highScore';
+
+    function loadHighScore() {
+        try {
+            const saved = localStorage.getItem(LS_KEY);
+            if (saved === null) return 0;
+            const parsed = parseInt(saved, 10);
+            return isNaN(parsed) || parsed < 0 ? 0 : parsed;
+        } catch (e) {
+            return 0;
+        }
+    }
+
+    function saveHighScore(val) {
+        try {
+            localStorage.setItem(LS_KEY, String(val));
+        } catch (e) { /* storage may be unavailable */ }
+    }
+
     /* ── State ── */
     let state      = 'intro';   /* intro | playing | gameover */
     let score      = 0;
-    let highScore  = 0;
+    let highScore  = loadHighScore();
+    let newRecord  = false;     /* true when this run beat the stored best */
     let speed      = BASE_SPEED;
     let frameCount = 0;
     let gracePhase = false;     /* true during the safe runway at game start */
@@ -352,7 +373,13 @@
     }
 
     function endGame() {
-        if (score > highScore) highScore = score;
+        if (score > highScore) {
+            highScore = score;
+            saveHighScore(highScore);
+            newRecord = true;
+        } else {
+            newRecord = false;
+        }
         state = 'gameover';
     }
 
@@ -464,9 +491,10 @@
     /* ── Try Again button ── */
     const BTN = { x: 0, y: 0, w: 160, h: 42 };
 
-    function drawTryAgainBtn(p) {
+    function drawTryAgainBtn(p, cardLines) {
         BTN.x = W / 2 - BTN.w / 2;
-        BTN.y = H / 2 + 80;
+        const cardH = (cardLines || 3) * 42 + 60;
+        BTN.y = Math.min(H / 2 + cardH / 2 + 10, H - BTN.h - 10);
 
         const grad = ctx.createLinearGradient(BTN.x, BTN.y, BTN.x + BTN.w, BTN.y);
         grad.addColorStop(0, '#d4b5e8');
@@ -490,16 +518,23 @@
     function drawIntro(p) {
         drawBackground(p);
 
-        drawOverlayCard(p, [
+        const lines = [
             { text: '🌸 Gravity Flip Platformer', font: "bold 24px 'Playfair Display', serif", color: p.titleText },
             { text: "You've made it this far in the interview —", font: "italic 14px 'Lato', sans-serif", color: p.bodyText },
             { text: 'can you survive the gravity flip?', font: "italic 14px 'Lato', sans-serif", color: p.bodyText },
             { text: 'Press Space / Tap to flip gravity', font: "14px 'Lato', sans-serif", color: p.bodyText },
             { text: 'Avoid the gaps. Good luck! 💜', font: "14px 'Lato', sans-serif", color: p.bodyText },
-        ]);
+        ];
+        if (highScore > 0) {
+            lines.push({ text: 'Your Best: ' + Math.floor(highScore / 6), font: "14px 'Lato', sans-serif", color: '#b48fd8' });
+        }
+        drawOverlayCard(p, lines);
 
-        /* Start button */
-        const bx = W / 2 - 80, by = H / 2 + 90, bw = 160, bh = 42;
+        /* Start button — positioned just below the card */
+        const bw = 160, bh = 42;
+        const cardH = lines.length * 42 + 60;
+        const bx = W / 2 - bw / 2;
+        const by = Math.min(H / 2 + cardH / 2 + 10, H - bh - 10);
         const grad = ctx.createLinearGradient(bx, by, bx + bw, by);
         grad.addColorStop(0, '#d4b5e8');
         grad.addColorStop(1, '#f5c9d4');
@@ -549,13 +584,17 @@
         ctx.fillStyle = 'rgba(0,0,0,0.25)';
         ctx.fillRect(0, 0, W, H);
 
-        drawOverlayCard(p, [
+        const lines = [
             { text: 'Game Over 💔', font: "bold 26px 'Playfair Display', serif", color: p.titleText },
             { text: 'Score: ' + Math.floor(score / 6), font: "18px 'Lato', sans-serif", color: p.bodyText },
             { text: 'Best: ' + Math.floor(highScore / 6), font: "16px 'Lato', sans-serif", color: p.bodyText },
-        ]);
+        ];
+        if (newRecord) {
+            lines.push({ text: '🏆 New Best — saved!', font: "bold 15px 'Lato', sans-serif", color: '#b48fd8' });
+        }
+        drawOverlayCard(p, lines);
 
-        drawTryAgainBtn(p);
+        drawTryAgainBtn(p, lines.length);
     }
 
     /* ── Main loop ── */
