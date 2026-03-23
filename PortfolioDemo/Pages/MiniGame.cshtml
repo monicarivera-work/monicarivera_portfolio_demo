@@ -117,8 +117,11 @@
     /* Responsive sizing — scales the canvas CSS display size to fit the viewport
        while keeping the internal 800×400 resolution (crisp rendering via CSS scale). */
     function resizeCanvas() {
+        const maxW = Math.min(1100, window.innerWidth - 32);
+      
         const padding = window.innerWidth <= 480 ? 16 : 32;
         const maxW = Math.min(800, window.innerWidth - padding);
+      
         const scale = maxW / 800;
         canvas.style.width  = maxW + 'px';
         canvas.style.height = Math.round(400 * scale) + 'px';
