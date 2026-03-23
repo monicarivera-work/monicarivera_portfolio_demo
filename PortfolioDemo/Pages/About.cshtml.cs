@@ -18,6 +18,7 @@ namespace PortfolioDemo.Pages
 
         public void OnGet()
         {
+            _logger.LogInformation("About page visited");
             ContactEmail = _configuration[Constants.EmailAddressKey];
         }
     }
