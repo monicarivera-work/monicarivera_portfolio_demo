@@ -24,6 +24,7 @@
         font-family: 'Lato', sans-serif;
         margin-bottom: 1.5rem;
         font-size: 1rem;
+        text-align: center;
     }
 
     body.dark-mode .game-subtitle {
@@ -44,10 +45,56 @@
         font-family: 'Lato', sans-serif;
         font-size: 0.85rem;
         color: #8a7a9e;
+        text-align: center;
     }
 
     body.dark-mode .game-hint {
         color: #b0a0c8;
+    }
+
+    /* Mobile tap button — shown only on touch devices */
+    .mobile-tap-btn {
+        display: none;
+        margin-top: 1rem;
+        background: linear-gradient(135deg, #d4b5e8, #f5c9d4);
+        border: none;
+        border-radius: 50px;
+        padding: 14px 40px;
+        font-family: 'Lato', sans-serif;
+        font-size: 1.1rem;
+        font-weight: 700;
+        color: #4a3060;
+        cursor: pointer;
+        box-shadow: 0 4px 20px rgba(212, 181, 232, 0.4);
+        transition: transform 0.15s ease, box-shadow 0.15s ease;
+        -webkit-tap-highlight-color: transparent;
+        user-select: none;
+    }
+
+    .mobile-tap-btn:active {
+        transform: scale(0.96);
+        box-shadow: 0 2px 10px rgba(212, 181, 232, 0.3);
+    }
+
+    body.dark-mode .mobile-tap-btn {
+        color: #2a1040;
+    }
+
+    @@media (max-width: 768px) {
+        .game-page-wrapper {
+            padding: 1.25rem 0.5rem 2rem;
+        }
+
+        .game-hint .keyboard-hint {
+            display: none;
+        }
+    }
+
+    @@media (hover: none) and (pointer: coarse) {
+        /* Touch-only devices: show the tap button */
+        .mobile-tap-btn {
+            display: inline-block;
+        }
     }
 </style>
 
@@ -55,7 +102,8 @@
     <h1>🎮 Gravity Flip</h1>
     <p class="game-subtitle">A side-scrolling platformer — flip gravity to survive!</p>
     <canvas id="gameCanvas" width="800" height="400" aria-label="Gravity Flip platformer game. Press Space or tap to flip gravity and avoid gaps." role="application" tabindex="0"></canvas>
-    <p class="game-hint">Press <strong>Space</strong> or <strong>tap</strong> to flip gravity &nbsp;|&nbsp; Avoid the gaps!</p>
+    <p class="game-hint"><span class="keyboard-hint">Press <strong>Space</strong> or </span><strong>tap</strong> to flip gravity &nbsp;|&nbsp; Avoid the gaps!</p>
+    <button class="mobile-tap-btn" id="mobileTapBtn" aria-label="Tap to flip gravity">👆 Tap to Flip!</button>
 </div>
 
 <script>
@@ -66,15 +114,30 @@
     const canvas  = document.getElementById('gameCanvas');
     const ctx     = canvas.getContext('2d');
 
-    /* Responsive sizing */
+    /* Responsive sizing — scales the canvas CSS display size to fit the viewport
+       while keeping the internal 800×400 resolution (crisp rendering via CSS scale). */
     function resizeCanvas() {
-        const maxW = Math.min(800, window.innerWidth - 32);
+        const padding = window.innerWidth <= 480 ? 16 : 32;
+        const maxW = Math.min(800, window.innerWidth - padding);
         const scale = maxW / 800;
         canvas.style.width  = maxW + 'px';
         canvas.style.height = Math.round(400 * scale) + 'px';
     }
     resizeCanvas();
     window.addEventListener('resize', resizeCanvas);
+
+    /* ── Mobile tap button ── */
+    const mobileTapBtn = document.getElementById('mobileTapBtn');
+    if (mobileTapBtn) {
+        mobileTapBtn.addEventListener('pointerdown', function (e) {
+            e.preventDefault();
+            if (state === 'intro' || state === 'gameover') {
+                startGame();
+            } else {
+                flip();
+            }
+        });
+    }
 
     /* ── Colour palette (light / dark mode) ── */
     function palette() {
