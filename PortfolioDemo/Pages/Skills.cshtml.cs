@@ -18,6 +18,7 @@ namespace PortfolioDemo.Pages
 
         public void OnGet()
         {
+            _logger.LogInformation("Skills page visited");
             ResumeFileName = _configuration[Constants.ResumeFileNameKey] ?? string.Empty;
         }
     }

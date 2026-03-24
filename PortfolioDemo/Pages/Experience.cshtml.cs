@@ -14,6 +14,7 @@ namespace PortfolioDemo.Pages
 
         public void OnGet()
         {
+            _logger.LogInformation("Experience page visited");
         }
     }
 

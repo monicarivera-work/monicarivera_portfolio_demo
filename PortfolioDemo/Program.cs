@@ -8,6 +8,15 @@ builder.Services.AddHttpClient();
 // Add Application Insights telemetry
 builder.Services.AddApplicationInsightsTelemetry();
 
+// Configure HTTP request logging for traffic monitoring
+builder.Services.AddHttpLogging(logging =>
+{
+    logging.LoggingFields = Microsoft.AspNetCore.HttpLogging.HttpLoggingFields.RequestMethod
+        | Microsoft.AspNetCore.HttpLogging.HttpLoggingFields.RequestPath
+        | Microsoft.AspNetCore.HttpLogging.HttpLoggingFields.ResponseStatusCode
+        | Microsoft.AspNetCore.HttpLogging.HttpLoggingFields.Duration;
+});
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
@@ -18,6 +27,7 @@ if (!app.Environment.IsDevelopment())
     app.UseHsts();
 }
 
+app.UseHttpLogging();
 app.UseHttpsRedirection();
 app.UseStaticFiles();
 
