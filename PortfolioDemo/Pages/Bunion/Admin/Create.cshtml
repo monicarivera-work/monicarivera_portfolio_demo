@@ -1,0 +1,148 @@
+@page "/Bunion/Admin/Create"
+@model CreateModel
+@{
+    ViewData["Title"] = "Create Article";
+    Layout = "_BunionLayout";
+}
+
+<!-- Admin bar -->
+<div class="bunion-admin-bar">
+  <div class="container d-flex justify-content-between align-items-center">
+    <span><i class="fas fa-pencil-alt me-2"></i>New Article</span>
+    <div>
+      <a href="/Bunion/Admin/Dashboard">← Dashboard</a>
+      <a href="/Bunion/Admin/Logout">Sign Out</a>
+    </div>
+  </div>
+</div>
+
+<div class="container py-4">
+  <div class="bunion-admin-panel">
+    <h1 class="bunion-admin-title">Create New Article</h1>
+
+    <form method="post">
+      @Html.AntiForgeryToken()
+
+      <div class="row">
+        <div class="col-md-8">
+          <!-- Title -->
+          <div class="bunion-form-group">
+            <label class="bunion-form-label" for="title">Headline *</label>
+            <input type="text" id="title" name="title" class="bunion-form-control"
+                   value="@Model.Input.Title" required maxlength="200"
+                   placeholder="Compelling, absurd headline goes here" />
+          </div>
+
+          <!-- Subtitle -->
+          <div class="bunion-form-group">
+            <label class="bunion-form-label" for="subtitle">Subheadline</label>
+            <input type="text" id="subtitle" name="subtitle" class="bunion-form-control"
+                   value="@Model.Input.Subtitle" maxlength="400"
+                   placeholder="Slightly more specific absurdity" />
+          </div>
+
+          <!-- Body -->
+          <div class="bunion-form-group">
+            <label class="bunion-form-label" for="body">Article Body (HTML) *</label>
+            <textarea id="body" name="body" class="bunion-form-control bunion-textarea"
+                      required placeholder="<p>Write your article here. HTML is supported.</p>
+<p>Use &lt;strong&gt;, &lt;em&gt;, &lt;a href='...'&gt;, &lt;blockquote class='bunion-pullquote'&gt;, etc.</p>">@Model.Input.Body</textarea>
+            <p class="bunion-form-hint">
+              HTML is supported. Use <code>&lt;p&gt;</code> for paragraphs,
+              <code>&lt;blockquote class="bunion-pullquote"&gt;</code> for pull quotes,
+              <code>&lt;a href="..."&gt;</code> for links.
+            </p>
+          </div>
+        </div>
+
+        <div class="col-md-4">
+          <!-- Category -->
+          <div class="bunion-form-group">
+            <label class="bunion-form-label" for="category">Section *</label>
+            <select id="category" name="category" class="bunion-form-control" required>
+              @foreach (var cat in BunionCategories.All)
+              {
+                if (Model.Input.Category == cat)
+                {
+                  <option value="@cat" selected="selected">@cat</option>
+                }
+                else
+                {
+                  <option value="@cat">@cat</option>
+                }
+              }
+            </select>
+          </div>
+
+          <!-- Author -->
+          <div class="bunion-form-group">
+            <label class="bunion-form-label" for="author">Author</label>
+            <input type="text" id="author" name="author" class="bunion-form-control"
+                   value="@Model.Input.Author" maxlength="100"
+                   placeholder="The Bunion Staff" />
+          </div>
+
+          <!-- Image URL -->
+          <div class="bunion-form-group">
+            <label class="bunion-form-label" for="imageUrl">Image URL</label>
+            <input type="url" id="imageUrl" name="imageUrl" class="bunion-form-control"
+                   value="@Model.Input.ImageUrl"
+                   placeholder="https://example.com/image.jpg" />
+            <p class="bunion-form-hint">Paste a direct image URL. Tip: unsplash.com has free photos.</p>
+          </div>
+
+          <!-- Image Alt -->
+          <div class="bunion-form-group">
+            <label class="bunion-form-label" for="imageAlt">Image Caption / Alt Text</label>
+            <input type="text" id="imageAlt" name="imageAlt" class="bunion-form-control"
+                   value="@Model.Input.ImageAlt" maxlength="300"
+                   placeholder="Describe the image" />
+          </div>
+
+          <!-- Tags -->
+          <div class="bunion-form-group">
+            <label class="bunion-form-label" for="tags">Tags</label>
+            <input type="text" id="tags" name="tags" class="bunion-form-control"
+                   value="@string.Join(", ", Model.Input.Tags)"
+                   placeholder="politics, satire, area man" />
+            <p class="bunion-form-hint">Comma-separated tags.</p>
+          </div>
+
+          <!-- Flags -->
+          <div class="bunion-form-group">
+            <label class="bunion-form-check">
+              <input type="checkbox" name="isFeatured" value="true"
+                     @(Model.Input.IsFeatured ? "checked" : "") />
+              <span>Featured (shown prominently on homepage)</span>
+            </label>
+          </div>
+
+          <div class="bunion-form-group">
+            <label class="bunion-form-check">
+              <input type="checkbox" name="isPublished" value="true"
+                     @(Model.Input.IsPublished ? "checked" : "") />
+              <span>Published (visible to readers)</span>
+            </label>
+          </div>
+
+          <!-- Submit -->
+          <div class="bunion-form-group" style="margin-top:24px;">
+            <button type="submit" class="bunion-btn-primary" style="width:100%;">
+              <i class="fas fa-save me-1"></i>Publish Article
+            </button>
+            <a href="/Bunion/Admin/Dashboard" class="bunion-btn-secondary"
+               style="width:100%; display:block; text-align:center; margin-top:8px;">
+              Cancel
+            </a>
+          </div>
+        </div>
+      </div>
+
+      @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+      {
+        <div class="bunion-alert bunion-alert-error" role="alert">@Model.ErrorMessage</div>
+      }
+
+    </form>
+  </div>
+</div>

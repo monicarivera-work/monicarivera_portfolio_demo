@@ -1,0 +1,172 @@
+@inject Microsoft.Extensions.Configuration.IConfiguration Configuration
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] | The Bunion</title>
+    <meta name="description" content="@(ViewData["Description"] ?? "The Bunion — America's Finest Satirical News Source. All the news that's unfit to print.")" />
+    <meta property="og:title" content="@ViewData["Title"] | The Bunion" />
+    <meta property="og:description" content="@(ViewData["Description"] ?? "The Bunion — America's Finest Satirical News Source.")" />
+    <meta property="og:type" content="article" />
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/css/bunion.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Lato:wght@300;400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+</head>
+<body class="bunion-body">
+
+    <a class="bunion-skip-link" href="#bunion-main">Skip to main content</a>
+
+    <!-- Top Bar -->
+    <div class="bunion-topbar">
+        <div class="container d-flex justify-content-between align-items-center">
+            <div>
+                <span class="bunion-date">@DateTime.Now.ToString("dddd, MMMM d, yyyy")</span>
+            </div>
+            <div>
+                <a href="/Bunion/About">About</a>
+                <a href="/Bunion/Admin/Login" title="Staff Login"><i class="fas fa-lock"></i></a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Masthead -->
+    <header class="bunion-masthead" role="banner">
+        <div class="container">
+            <div class="bunion-masthead-inner">
+                <span class="bunion-masthead-tagline-top">Est. 2024 &nbsp;|&nbsp; All The News That's Unfit To Print</span>
+                <a class="bunion-logo" href="/Bunion">The Bunion</a>
+                <p class="bunion-masthead-tagline-bottom">America's Finest Satirical News Source</p>
+                <div class="bunion-masthead-meta">
+                    <span class="bunion-edition">Nation's Edition</span>
+                    <span class="bunion-satire-badge">Satire</span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Primary Nav -->
+    <nav class="bunion-nav" aria-label="Primary navigation">
+        <div class="container d-flex align-items-center">
+            <button class="bunion-nav-toggle" id="bunionNavToggle" aria-label="Toggle navigation" aria-expanded="false">
+                &#9776;
+            </button>
+            <ul class="bunion-nav-list" id="bunionNavList" role="menubar">
+                <li role="none"><a href="/Bunion" role="menuitem">Home</a></li>
+                <li role="none"><a href="/Bunion/Category/Politics" role="menuitem">Politics</a></li>
+                <li role="none"><a href="/Bunion/Category/World" role="menuitem">World</a></li>
+                <li role="none"><a href="/Bunion/Category/Science" role="menuitem">Science</a></li>
+                <li role="none"><a href="/Bunion/Category/Health" role="menuitem">Health</a></li>
+                <li role="none"><a href="/Bunion/Category/Business" role="menuitem">Business</a></li>
+                <li role="none"><a href="/Bunion/Category/Sports" role="menuitem">Sports</a></li>
+                <li role="none"><a href="/Bunion/Category/Entertainment" role="menuitem">Entertainment</a></li>
+                <li role="none"><a href="/Bunion/Category/Opinion" role="menuitem">Opinion</a></li>
+                <li role="none"><a href="/Bunion/About" role="menuitem">About</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- Breaking News Ticker -->
+    <div class="bunion-ticker" aria-label="Breaking news">
+        <div class="bunion-ticker-wrap container">
+            <span class="bunion-ticker-label">Breaking</span>
+            <div class="bunion-ticker-track">
+                <div class="bunion-ticker-inner">
+                    <span>Area Man Saves $4 On Groceries, Immediately Spends $47 On Impulse Purchase At Checkout &nbsp;★&nbsp;</span>
+                    <span>Scientists Confirm That Whatever You're Doing Right Now, You Could Probably Be More Hydrated &nbsp;★&nbsp;</span>
+                    <span>Local Man 'Just Resting Eyes' For Third Hour Of Nap &nbsp;★&nbsp;</span>
+                    <span>Nation's Economists Agree That The Economy Is Complicated And You Probably Won't Understand &nbsp;★&nbsp;</span>
+                    <span>Study Finds Adults Who Color-Code Their Calendars Equally Stressed As Those Who Don't &nbsp;★&nbsp;</span>
+                    <span>Area Man Saves $4 On Groceries, Immediately Spends $47 On Impulse Purchase At Checkout &nbsp;★&nbsp;</span>
+                    <span>Scientists Confirm That Whatever You're Doing Right Now, You Could Probably Be More Hydrated &nbsp;★&nbsp;</span>
+                    <span>Local Man 'Just Resting Eyes' For Third Hour Of Nap &nbsp;★&nbsp;</span>
+                    <span>Nation's Economists Agree That The Economy Is Complicated And You Probably Won't Understand &nbsp;★&nbsp;</span>
+                    <span>Study Finds Adults Who Color-Code Their Calendars Equally Stressed As Those Who Don't &nbsp;★&nbsp;</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Satire Disclaimer -->
+    <div class="bunion-disclaimer" role="note" aria-label="Satire disclaimer">
+        <strong>THE BUNION IS A SATIRE WEBSITE.</strong> All articles, headlines, and content are fictional and intended for entertainment purposes only. Any resemblance to real events, persons, or institutions is purely coincidental — and probably funnier that way.
+    </div>
+
+    <!-- Main Content -->
+    <main id="bunion-main" role="main">
+        @RenderBody()
+    </main>
+
+    <!-- Footer -->
+    <footer class="bunion-footer" role="contentinfo">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-4 mb-4">
+                    <a class="bunion-footer-logo" href="/Bunion">The Bunion</a>
+                    <p class="bunion-footer-tagline">America's Finest Satirical News Source</p>
+                    <p>Delivering the news you didn't need, with the urgency it doesn't deserve, since 2024.</p>
+                </div>
+                <div class="col-md-4 mb-4">
+                    <h4 style="color:white; font-family: var(--bunion-serif); font-size:0.9rem; text-transform:uppercase; letter-spacing:0.08em; border-bottom: 1px solid #333; padding-bottom:8px; margin-bottom:12px;">Sections</h4>
+                    <div class="bunion-footer-nav">
+                        <a href="/Bunion/Category/Politics">Politics</a>
+                        <a href="/Bunion/Category/World">World</a>
+                        <a href="/Bunion/Category/Science">Science</a>
+                        <a href="/Bunion/Category/Health">Health</a><br>
+                        <a href="/Bunion/Category/Business">Business</a>
+                        <a href="/Bunion/Category/Sports">Sports</a>
+                        <a href="/Bunion/Category/Entertainment">Entertainment</a>
+                        <a href="/Bunion/Category/Opinion">Opinion</a>
+                    </div>
+                </div>
+                <div class="col-md-4 mb-4">
+                    <h4 style="color:white; font-family: var(--bunion-serif); font-size:0.9rem; text-transform:uppercase; letter-spacing:0.08em; border-bottom: 1px solid #333; padding-bottom:8px; margin-bottom:12px;">The Bunion</h4>
+                    <div class="bunion-footer-nav">
+                        <a href="/Bunion/About">About Us</a>
+                        <a href="/Bunion/About#disclaimer">Disclaimer</a>
+                    </div>
+                </div>
+            </div>
+            <div class="bunion-footer-bottom">
+                <div class="row align-items-center">
+                    <div class="col-md-8">
+                        <p>&copy; @DateTime.Now.Year The Bunion. All rights reserved.</p>
+                        <p class="bunion-footer-disclaimer">
+                            The Bunion is a satirical news publication. All content is fictional and for entertainment purposes only.
+                            The Bunion is not responsible for any decisions made based on our reporting, though we would find that very funny.
+                        </p>
+                    </div>
+                    <div class="col-md-4 text-md-end">
+                        <a href="/" style="color:#666; font-size:0.75rem; text-decoration:none;">← Back to Portfolio</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Mobile nav toggle
+        const navToggle = document.getElementById('bunionNavToggle');
+        const navList   = document.getElementById('bunionNavList');
+        if (navToggle && navList) {
+            navToggle.addEventListener('click', () => {
+                const open = navList.classList.toggle('open');
+                navToggle.setAttribute('aria-expanded', open);
+            });
+        }
+        // Highlight current nav item
+        const currentPath = window.location.pathname.toLowerCase();
+        document.querySelectorAll('.bunion-nav-list a').forEach(link => {
+            const href = link.getAttribute('href')?.toLowerCase() || '';
+            if (href !== '/bunion' && currentPath.startsWith(href)) {
+                link.classList.add('active');
+            } else if (href === '/bunion' && (currentPath === '/bunion' || currentPath === '/bunion/')) {
+                link.classList.add('active');
+            }
+        });
+    </script>
+    @RenderSection("Scripts", required: false)
+</body>
+</html>

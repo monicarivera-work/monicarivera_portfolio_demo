@@ -1,0 +1,35 @@
+@page "/Bunion/Admin/Login"
+@model LoginModel
+@{
+    ViewData["Title"] = "Staff Login";
+    Layout = "_BunionLayout";
+}
+
+<div class="bunion-login-wrap">
+  <div class="bunion-login-card">
+    <h1 class="bunion-login-title">
+      <i class="fas fa-lock" style="font-size:1rem; color:var(--bunion-red);"></i>
+      Staff Portal
+    </h1>
+
+    @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+    {
+      <div class="bunion-alert bunion-alert-error" role="alert">
+        @Model.ErrorMessage
+      </div>
+    }
+
+    <form method="post">
+      @Html.AntiForgeryToken()
+      <div class="bunion-form-group">
+        <label class="bunion-form-label" for="password">Password</label>
+        <input type="password" id="password" name="password" class="bunion-form-control" autocomplete="current-password" required />
+      </div>
+      <button type="submit" class="bunion-btn-primary" style="width:100%;">Sign In</button>
+    </form>
+
+    <p style="font-family:var(--bunion-sans); font-size:0.75rem; color:var(--bunion-mid); text-align:center; margin-top:16px;">
+      Not a staff member? <a href="/Bunion" style="color:var(--bunion-red);">Return to The Bunion</a>
+    </p>
+  </div>
+</div>

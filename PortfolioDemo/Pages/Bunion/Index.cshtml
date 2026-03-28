@@ -1,0 +1,123 @@
+@page "/Bunion"
+@model IndexModel
+@{
+    ViewData["Title"] = "Home";
+    ViewData["Description"] = "The Bunion — America's Finest Satirical News Source. All the news that's unfit to print.";
+}
+
+<div style="background: var(--bunion-white);">
+  <div class="container py-4">
+
+    @if (Model.FeaturedArticles.Any())
+    {
+      <!-- ── HERO ──────────────────────────────────────────── -->
+      <div class="row mb-4">
+        @{var hero = Model.FeaturedArticles.First();}
+        <div class="col-lg-8 border-end pe-lg-4">
+          @if (!string.IsNullOrEmpty(hero.ImageUrl))
+          {
+            <img src="@hero.ImageUrl" alt="@hero.ImageAlt" class="bunion-hero-img" loading="eager" />
+          }
+          else
+          {
+            <div class="bunion-hero-placeholder"><i class="fas fa-newspaper fa-2x me-2"></i> No image</div>
+          }
+          <a href="/Bunion/Category/@hero.Category" class="bunion-section-label">@hero.Category</a>
+          <h1 class="bunion-headline bunion-headline-xl">
+            <a href="/Bunion/Article/@hero.Slug">@hero.Title</a>
+          </h1>
+          <p class="bunion-subheadline">@hero.Subtitle</p>
+          <p class="bunion-byline">By <strong>@hero.Author</strong> &nbsp;|&nbsp; @hero.PublishDate.ToString("MMMM d, yyyy")</p>
+        </div>
+
+        <!-- Side featured stack -->
+        <div class="col-lg-4 ps-lg-4 mt-4 mt-lg-0">
+          @foreach (var a in Model.FeaturedArticles.Skip(1).Take(3))
+          {
+            <div class="bunion-card">
+              <a href="/Bunion/Category/@a.Category" class="bunion-section-label">@a.Category</a>
+              <h2 class="bunion-headline bunion-headline-sm">
+                <a href="/Bunion/Article/@a.Slug">@a.Title</a>
+              </h2>
+              <p class="bunion-byline">@a.PublishDate.ToString("MMM d, yyyy")</p>
+            </div>
+          }
+        </div>
+      </div>
+    }
+
+    <hr class="bunion-divider" />
+
+    <!-- ── LATEST ARTICLES ──────────────────────────────── -->
+    <div class="row">
+      <div class="col-lg-8">
+        <div class="bunion-section-header">
+          <h2 class="bunion-section-title">Latest News</h2>
+          <a href="#" class="bunion-see-all">See All</a>
+        </div>
+
+        <div class="row">
+          @foreach (var article in Model.RecentArticles)
+          {
+            <div class="col-md-6 mb-4">
+              <div class="bunion-card" style="border-bottom:none;">
+                @if (!string.IsNullOrEmpty(article.ImageUrl))
+                {
+                  <a href="/Bunion/Article/@article.Slug">
+                    <img src="@article.ImageUrl" alt="@article.ImageAlt" class="bunion-card-img" loading="lazy" />
+                  </a>
+                }
+                <a href="/Bunion/Category/@article.Category" class="bunion-section-label">@article.Category</a>
+                <h3 class="bunion-headline bunion-headline-md">
+                  <a href="/Bunion/Article/@article.Slug">@article.Title</a>
+                </h3>
+                <p class="bunion-subheadline" style="font-size:0.9rem;">@article.Subtitle</p>
+                <p class="bunion-byline">By <strong>@article.Author</strong> &nbsp;|&nbsp; @article.PublishDate.ToString("MMM d, yyyy")</p>
+              </div>
+            </div>
+          }
+        </div>
+      </div>
+
+      <!-- ── SIDEBAR ──────────────────────────────────────── -->
+      <div class="col-lg-4">
+        <div class="bunion-sidebar">
+
+          <!-- Most Read widget -->
+          <div class="bunion-sidebar-widget">
+            <h3 class="bunion-sidebar-widget-title">Most Read</h3>
+            @{int rank = 1;}
+            @foreach (var a in Model.AllArticles.Take(5))
+            {
+              <div class="bunion-sidebar-item d-flex gap-2">
+                <span class="bunion-sidebar-num">@rank</span>
+                <div>
+                  <a href="/Bunion/Category/@a.Category" class="bunion-section-label" style="font-size:0.68rem;">@a.Category</a>
+                  <h4 class="bunion-headline bunion-headline-sm" style="font-size:0.92rem; margin:0;">
+                    <a href="/Bunion/Article/@a.Slug">@a.Title</a>
+                  </h4>
+                </div>
+              </div>
+              rank++;
+            }
+          </div>
+
+          <!-- Categories widget -->
+          <div class="bunion-sidebar-widget">
+            <h3 class="bunion-sidebar-widget-title">Browse By Section</h3>
+            @foreach (var cat in BunionCategories.All)
+            {
+              var count = Model.AllArticles.Count(a => string.Equals(a.Category, cat, StringComparison.OrdinalIgnoreCase));
+              <a href="/Bunion/Category/@cat" class="bunion-category-link">
+                <span>@cat</span>
+                <span class="bunion-category-count">@count</span>
+              </a>
+            }
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
