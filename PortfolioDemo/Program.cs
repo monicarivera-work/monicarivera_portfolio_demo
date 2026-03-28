@@ -1,9 +1,35 @@
+using Microsoft.AspNetCore.Authentication.Cookies;
+using PortfolioDemo.Services.Bunion;
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddRazorPages();
 builder.Services.AddControllers();
 builder.Services.AddHttpClient();
+
+// ── The Bunion: article storage (singleton — JSON file) ──────────
+builder.Services.AddSingleton<ArticleService>();
+
+// ── The Bunion: cookie authentication for admin ──────────────────
+builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
+    .AddCookie(options =>
+    {
+        options.LoginPath        = "/Bunion/Admin/Login";
+        options.LogoutPath       = "/Bunion/Admin/Logout";
+        options.AccessDeniedPath = "/Bunion/Admin/Login";
+        options.Cookie.Name      = "BunionAdmin";
+        options.Cookie.HttpOnly  = true;
+        options.Cookie.SameSite  = SameSiteMode.Strict;
+        options.ExpireTimeSpan   = TimeSpan.FromDays(7);
+        options.SlidingExpiration = true;
+    });
+
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy("BunionAdmin", policy =>
+        policy.RequireClaim("bunion_admin", "true"));
+});
 
 // Add Application Insights telemetry
 builder.Services.AddApplicationInsightsTelemetry();
@@ -33,6 +59,7 @@ app.UseStaticFiles();
 
 app.UseRouting();
 
+app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();

@@ -1,0 +1,83 @@
+@page "/Bunion/Category/{category}"
+@model CategoryModel
+@{
+    ViewData["Title"] = Model.Category;
+    ViewData["Description"] = $"The Bunion — {Model.Category} news. All the satirical {Model.Category.ToLower()} reporting you never asked for.";
+}
+
+<div class="bunion-category-hero">
+  <div class="container">
+    <h1>@Model.Category</h1>
+    <p>All the satirical @Model.Category.ToLower() reporting you never knew you needed.</p>
+  </div>
+</div>
+
+<div style="background: var(--bunion-white);">
+  <div class="container pb-5">
+
+    @if (!Model.Articles.Any())
+    {
+      <div class="py-5 text-center">
+        <p class="bunion-subheadline">No articles found in this category yet. Our investigative team is on the case.</p>
+        <a href="/Bunion" class="bunion-btn-secondary">Back to Homepage</a>
+      </div>
+    }
+    else
+    {
+      <div class="row">
+        <div class="col-lg-8">
+          <div class="bunion-section-header">
+            <h2 class="bunion-section-title">@Model.Category — @Model.Articles.Count article@(Model.Articles.Count == 1 ? "" : "s")</h2>
+          </div>
+
+          @foreach (var article in Model.Articles)
+          {
+            <div class="row mb-4 pb-4" style="border-bottom:1px solid var(--bunion-border);">
+              @if (!string.IsNullOrEmpty(article.ImageUrl))
+              {
+                <div class="col-sm-4">
+                  <a href="/Bunion/Article/@article.Slug">
+                    <img src="@article.ImageUrl" alt="@article.ImageAlt" class="bunion-card-img" loading="lazy" />
+                  </a>
+                </div>
+                <div class="col-sm-8">
+                  <h3 class="bunion-headline bunion-headline-md">
+                    <a href="/Bunion/Article/@article.Slug">@article.Title</a>
+                  </h3>
+                  <p class="bunion-subheadline" style="font-size:0.9rem;">@article.Subtitle</p>
+                  <p class="bunion-byline">By <strong>@article.Author</strong> &nbsp;|&nbsp; @article.PublishDate.ToString("MMM d, yyyy")</p>
+                </div>
+              }
+              else
+              {
+                <div class="col-12">
+                  <h3 class="bunion-headline bunion-headline-md">
+                    <a href="/Bunion/Article/@article.Slug">@article.Title</a>
+                  </h3>
+                  <p class="bunion-subheadline" style="font-size:0.9rem;">@article.Subtitle</p>
+                  <p class="bunion-byline">By <strong>@article.Author</strong> &nbsp;|&nbsp; @article.PublishDate.ToString("MMM d, yyyy")</p>
+                </div>
+              }
+            </div>
+          }
+        </div>
+
+        <!-- Sidebar -->
+        <div class="col-lg-4">
+          <div class="bunion-sidebar">
+            <div class="bunion-sidebar-widget">
+              <h3 class="bunion-sidebar-widget-title">All Sections</h3>
+              @foreach (var cat in BunionCategories.All)
+              {
+                <a href="/Bunion/Category/@cat" class="bunion-category-link @(cat == Model.Category ? "active" : "")">
+                  @cat
+                </a>
+              }
+            </div>
+          </div>
+        </div>
+      </div>
+    }
+
+  </div>
+</div>

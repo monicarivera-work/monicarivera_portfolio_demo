@@ -419,3 +419,6 @@ FodyWeavers.xsd
 
 # Runtime generated files
 nohup.out
+
+# The Bunion — runtime article data (seed file is committed; live data is not)
+PortfolioDemo/Data/articles.json

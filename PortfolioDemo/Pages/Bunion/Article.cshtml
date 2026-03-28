@@ -1,0 +1,109 @@
+@page "/Bunion/Article/{slug}"
+@model ArticleModel
+@{
+    ViewData["Title"] = Model.Article?.Title ?? "Article Not Found";
+    ViewData["Description"] = Model.Article?.Subtitle;
+}
+
+@if (Model.Article == null)
+{
+  <div class="container py-5 text-center">
+    <h1 class="bunion-headline bunion-headline-xl" style="font-size:4rem;">404</h1>
+    <p class="bunion-subheadline">This article has gone missing, much like our journalistic integrity.</p>
+    <a href="/Bunion" class="bunion-btn-primary">Return to Homepage</a>
+  </div>
+}
+else
+{
+  <div class="bunion-article-page">
+    <div class="container">
+      <div class="row">
+        <!-- ── Article Content ───────────────────────────── -->
+        <div class="col-lg-8">
+          <div class="bunion-article-header">
+            <a href="/Bunion/Category/@Model.Article.Category" class="bunion-section-label">@Model.Article.Category</a>
+            <h1 class="bunion-headline bunion-headline-xl">@Model.Article.Title</h1>
+            <p class="bunion-subheadline" style="font-size:1.1rem;">@Model.Article.Subtitle</p>
+            <p class="bunion-byline">
+              By <strong>@Model.Article.Author</strong>
+              &nbsp;|&nbsp;
+              <time datetime="@Model.Article.PublishDate.ToString("yyyy-MM-dd")">
+                @Model.Article.PublishDate.ToString("MMMM d, yyyy")
+              </time>
+            </p>
+          </div>
+
+          @if (!string.IsNullOrEmpty(Model.Article.ImageUrl))
+          {
+            <figure>
+              <img src="@Model.Article.ImageUrl" alt="@Model.Article.ImageAlt" class="bunion-article-image" />
+              @if (!string.IsNullOrEmpty(Model.Article.ImageAlt))
+              {
+                <figcaption class="bunion-article-caption">@Model.Article.ImageAlt</figcaption>
+              }
+            </figure>
+          }
+
+          <div class="bunion-article-body">
+            @Html.Raw(Model.Article.Body)
+          </div>
+
+          @if (Model.Article.Tags.Any())
+          {
+            <div class="bunion-article-tags">
+              <strong style="font-size:0.78rem; text-transform:uppercase; letter-spacing:0.08em; font-family:var(--bunion-sans);">Tags:</strong>
+              @foreach (var tag in Model.Article.Tags)
+              {
+                <span class="bunion-tag">@tag</span>
+              }
+            </div>
+          }
+
+          <div style="margin-top:32px; padding-top:20px; border-top: 1px solid var(--bunion-border);">
+            <p style="font-family:var(--bunion-sans); font-size:0.78rem; color:var(--bunion-mid); font-style:italic;">
+              <strong>Editor's Note:</strong> The Bunion is a satirical publication. This article is entirely fictional and intended for entertainment purposes only.
+            </p>
+          </div>
+        </div>
+
+        <!-- ── Sidebar ──────────────────────────────────── -->
+        <div class="col-lg-4">
+          <div class="bunion-sidebar">
+
+            <!-- More from this category -->
+            @if (Model.RelatedArticles.Any())
+            {
+              <div class="bunion-sidebar-widget">
+                <h3 class="bunion-sidebar-widget-title">More From @Model.Article.Category</h3>
+                @foreach (var rel in Model.RelatedArticles)
+                {
+                  <div class="bunion-sidebar-item">
+                    <h4 class="bunion-headline bunion-headline-sm" style="font-size:0.9rem; margin:0;">
+                      <a href="/Bunion/Article/@rel.Slug">@rel.Title</a>
+                    </h4>
+                    <p class="bunion-byline" style="margin:4px 0 0; font-size:0.75rem;">@rel.PublishDate.ToString("MMM d, yyyy")</p>
+                  </div>
+                }
+              </div>
+            }
+
+            <!-- Latest articles -->
+            <div class="bunion-sidebar-widget">
+              <h3 class="bunion-sidebar-widget-title">Latest News</h3>
+              @foreach (var a in Model.LatestArticles)
+              {
+                <div class="bunion-sidebar-item">
+                  <a href="/Bunion/Category/@a.Category" class="bunion-section-label" style="font-size:0.68rem;">@a.Category</a>
+                  <h4 class="bunion-headline bunion-headline-sm" style="font-size:0.9rem; margin:0;">
+                    <a href="/Bunion/Article/@a.Slug">@a.Title</a>
+                  </h4>
+                </div>
+              }
+            </div>
+
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+}

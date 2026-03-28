@@ -1,0 +1,102 @@
+@page "/Bunion/Admin/Dashboard"
+@model DashboardModel
+@{
+    ViewData["Title"] = "Admin Dashboard";
+    Layout = "_BunionLayout";
+}
+
+<!-- Admin bar -->
+<div class="bunion-admin-bar">
+  <div class="container d-flex justify-content-between align-items-center">
+    <span><i class="fas fa-pencil-alt me-2"></i>The Bunion — Editorial Dashboard</span>
+    <div>
+      <a href="/Bunion/Admin/Create">+ New Article</a>
+      <a href="/Bunion/Admin/Logout">Sign Out</a>
+      <a href="/Bunion" target="_blank">View Site ↗</a>
+    </div>
+  </div>
+</div>
+
+<div class="container py-4">
+  <div class="bunion-admin-panel">
+    <h1 class="bunion-admin-title">
+      <i class="fas fa-newspaper me-2" style="color:var(--bunion-red);"></i>Article Management
+    </h1>
+
+    @if (TempData["Success"] != null)
+    {
+      <div class="bunion-alert bunion-alert-success" role="alert">@TempData["Success"]</div>
+    }
+
+    <div class="d-flex justify-content-between align-items-center mb-3 mt-3">
+      <span style="font-family:var(--bunion-sans); font-size:0.85rem; color:var(--bunion-mid);">
+        @Model.Articles.Count article@(Model.Articles.Count == 1 ? "" : "s") total
+      </span>
+      <a href="/Bunion/Admin/Create" class="bunion-btn-primary">
+        <i class="fas fa-plus me-1"></i>New Article
+      </a>
+    </div>
+
+    @if (!Model.Articles.Any())
+    {
+      <p style="text-align:center; padding:40px; color:var(--bunion-mid); font-family:var(--bunion-sans);">
+        No articles yet. <a href="/Bunion/Admin/Create">Create your first article</a>.
+      </p>
+    }
+    else
+    {
+      <div style="overflow-x:auto;">
+        <table class="bunion-admin-table">
+          <thead>
+            <tr>
+              <th>Title</th>
+              <th>Category</th>
+              <th>Author</th>
+              <th>Date</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            @foreach (var a in Model.Articles)
+            {
+              <tr>
+                <td>
+                  <a href="/Bunion/Article/@a.Slug" target="_blank" style="font-weight:700; color:var(--bunion-dark); text-decoration:none;">
+                    @(a.Title.Length > 60 ? a.Title[..60] + "…" : a.Title)
+                  </a>
+                  @if (a.IsFeatured)
+                  {
+                    <span class="bunion-badge-featured ms-1">Featured</span>
+                  }
+                </td>
+                <td>@a.Category</td>
+                <td>@a.Author</td>
+                <td style="white-space:nowrap;">@a.PublishDate.ToString("MMM d, yyyy")</td>
+                <td>
+                  @if (a.IsPublished)
+                  {
+                    <span class="bunion-badge-published">Published</span>
+                  }
+                  else
+                  {
+                    <span class="bunion-badge-draft">Draft</span>
+                  }
+                </td>
+                <td style="white-space:nowrap;">
+                  <a href="/Bunion/Admin/Edit/@a.Id" class="bunion-btn-edit me-1">Edit</a>
+                  <form method="post" action="/Bunion/Admin/Delete/@a.Id" style="display:inline;"
+                        onsubmit="return confirm('Delete \'@a.Title.Replace("'","\\'")'? This cannot be undone.');">
+                    @Html.AntiForgeryToken()
+                    <button type="submit" class="bunion-btn-danger">Delete</button>
+                  </form>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+
+  </div>
+</div>
