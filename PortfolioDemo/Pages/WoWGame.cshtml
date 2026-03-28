@@ -1,0 +1,1849 @@
+@page
+@model WoWGameModel
+@{
+    ViewData["Title"] = "⚔️ Auto-Battle Simulator";
+    ViewData["Description"] = "A World of Warcraft-inspired auto-battle simulator. Watch your hero automatically defeat waves of enemies using classic RPG abilities!";
+}
+
+<style>
+    /* ============================================================
+       WOW-STYLE AUTO-BATTLE SIMULATOR
+       Inspired by World of Warcraft's iconic UI
+    ============================================================ */
+
+    @* Import a fantasy-style font *@
+    @@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=IM+Fell+English&display=swap');
+
+    :root {
+        --wow-gold: #ffd100;
+        --wow-gold-dark: #b8860b;
+        --wow-gold-border: #8b6914;
+        --wow-panel-bg: rgba(10, 6, 2, 0.92);
+        --wow-panel-border: #3d2a0a;
+        --wow-hp-full: #00c800;
+        --wow-hp-low: #c80000;
+        --wow-mana: #0070de;
+        --wow-energy: #ffee00;
+        --wow-rage: #c41e3a;
+        --wow-text: #ffd100;
+        --wow-text-light: #e8d5a3;
+        --wow-dmg: #ff4040;
+        --wow-heal: #00ff80;
+        --wow-crit: #ff8c00;
+        --wow-miss: #c0c0c0;
+        --wow-ability: #aad4f5;
+        --wow-bg-dark: #0d0805;
+    }
+
+    /* ── Page Wrapper ── */
+    .wow-page {
+        background: radial-gradient(ellipse at center top, #1a0d00 0%, #0d0805 50%, #050302 100%);
+        min-height: 100vh;
+        padding: 0;
+        margin: 0;
+        font-family: 'Cinzel', 'Palatino Linotype', 'Book Antiqua', serif;
+        color: var(--wow-text-light);
+        position: relative;
+        overflow: hidden;
+    }
+
+    /* ── Background ambiance ── */
+    .wow-page::before {
+        content: '';
+        position: fixed;
+        inset: 0;
+        background:
+            radial-gradient(circle at 20% 80%, rgba(139, 69, 19, 0.08) 0%, transparent 40%),
+            radial-gradient(circle at 80% 20%, rgba(70, 0, 120, 0.06) 0%, transparent 40%);
+        pointer-events: none;
+        z-index: 0;
+    }
+
+    .wow-game-container {
+        position: relative;
+        z-index: 1;
+        max-width: 1100px;
+        margin: 0 auto;
+        padding: 1rem 0.75rem 2rem;
+        min-height: calc(100vh - 140px);
+        display: flex;
+        flex-direction: column;
+        gap: 0.6rem;
+    }
+
+    /* ── Title Bar ── */
+    .wow-title-bar {
+        text-align: center;
+        padding: 0.5rem 0 0.25rem;
+    }
+
+    .wow-title-bar h1 {
+        font-family: 'Cinzel', serif;
+        font-weight: 700;
+        font-size: clamp(1.3rem, 3vw, 2rem);
+        color: var(--wow-gold);
+        text-shadow: 0 0 20px rgba(255, 209, 0, 0.5), 0 2px 4px #000;
+        letter-spacing: 0.05em;
+        margin: 0;
+    }
+
+    .wow-title-bar p {
+        font-family: 'IM Fell English', serif;
+        color: #c8a86c;
+        font-size: 0.8rem;
+        margin: 0.15rem 0 0;
+        letter-spacing: 0.1em;
+    }
+
+    /* ── WoW Panel mixin ── */
+    .wow-panel {
+        background: var(--wow-panel-bg);
+        border: 2px solid var(--wow-gold-border);
+        border-radius: 4px;
+        box-shadow:
+            inset 0 0 12px rgba(0, 0, 0, 0.8),
+            0 0 8px rgba(139, 105, 20, 0.3),
+            0 4px 16px rgba(0, 0, 0, 0.6);
+        position: relative;
+    }
+
+    .wow-panel::before {
+        content: '';
+        position: absolute;
+        inset: 1px;
+        border: 1px solid rgba(255, 209, 0, 0.08);
+        border-radius: 2px;
+        pointer-events: none;
+    }
+
+    /* ── Top Row: Player + Battle Arena + Target ── */
+    .wow-top-row {
+        display: grid;
+        grid-template-columns: 280px 1fr 280px;
+        gap: 0.6rem;
+        align-items: start;
+    }
+
+    /* ── Unit Frame ── */
+    .unit-frame {
+        padding: 0.5rem;
+    }
+
+    .unit-frame-inner {
+        display: flex;
+        gap: 0.5rem;
+        align-items: flex-start;
+    }
+
+    .unit-portrait {
+        width: 54px;
+        height: 54px;
+        border: 2px solid var(--wow-gold-border);
+        border-radius: 3px;
+        flex-shrink: 0;
+        position: relative;
+        overflow: hidden;
+        background: #0a0600;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 2rem;
+        box-shadow: inset 0 0 6px rgba(0,0,0,0.7);
+    }
+
+    .unit-portrait.dead {
+        filter: grayscale(1) brightness(0.4);
+    }
+
+    .unit-portrait-overlay {
+        position: absolute;
+        inset: 0;
+        border: 1px solid rgba(255, 209, 0, 0.15);
+        border-radius: 2px;
+    }
+
+    .unit-bars {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 3px;
+    }
+
+    .unit-name {
+        font-family: 'Cinzel', serif;
+        font-size: 0.72rem;
+        font-weight: 600;
+        color: var(--wow-gold);
+        text-shadow: 1px 1px 2px #000;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        margin-bottom: 2px;
+    }
+
+    .unit-level-badge {
+        display: inline-block;
+        background: rgba(139, 105, 20, 0.5);
+        border: 1px solid var(--wow-gold-border);
+        border-radius: 2px;
+        padding: 0 4px;
+        font-size: 0.6rem;
+        color: var(--wow-gold);
+        margin-right: 4px;
+        vertical-align: middle;
+    }
+
+    .bar-wrap {
+        position: relative;
+        height: 13px;
+        background: rgba(0, 0, 0, 0.7);
+        border: 1px solid rgba(80, 50, 0, 0.8);
+        border-radius: 2px;
+        overflow: hidden;
+    }
+
+    .bar-fill {
+        height: 100%;
+        border-radius: 1px;
+        transition: width 0.25s ease-out;
+        position: relative;
+    }
+
+    .bar-fill.hp {
+        background: linear-gradient(to bottom, #00e600, #00a000);
+    }
+
+    .bar-fill.hp.low {
+        background: linear-gradient(to bottom, #e60000, #900000);
+    }
+
+    .bar-fill.hp.medium {
+        background: linear-gradient(to bottom, #e6a000, #a06000);
+    }
+
+    .bar-fill.mana {
+        background: linear-gradient(to bottom, #1a90ff, #0055aa);
+    }
+
+    .bar-fill.energy {
+        background: linear-gradient(to bottom, #ffee30, #c0a000);
+    }
+
+    .bar-text {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-family: 'Cinzel', serif;
+        font-size: 0.55rem;
+        font-weight: 600;
+        color: #fff;
+        text-shadow: 1px 1px 1px #000, 0 0 3px rgba(0,0,0,0.8);
+        letter-spacing: 0.02em;
+    }
+
+    /* ── Battle Arena ── */
+    .battle-arena {
+        min-height: 220px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 0.75rem;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .battle-scene {
+        display: flex;
+        align-items: flex-end;
+        justify-content: space-between;
+        width: 100%;
+        height: 140px;
+        position: relative;
+    }
+
+    /* ── Ground line ── */
+    .battle-ground {
+        position: absolute;
+        bottom: 20px;
+        left: 0;
+        right: 0;
+        height: 2px;
+        background: linear-gradient(to right, transparent, rgba(139, 105, 20, 0.4), transparent);
+    }
+
+    /* ── Hero sprite ── */
+    .hero-sprite {
+        width: 70px;
+        height: 70px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 3.5rem;
+        position: relative;
+        filter: drop-shadow(0 4px 8px rgba(0,0,0,0.8));
+        transition: transform 0.15s ease;
+        z-index: 2;
+    }
+
+    .hero-sprite.attacking {
+        animation: heroAttack 0.4s ease;
+    }
+
+    .hero-sprite.casting {
+        animation: heroCast 0.6s ease infinite;
+    }
+
+    .hero-sprite.hurt {
+        animation: heroHurt 0.3s ease;
+    }
+
+    @@keyframes heroAttack {
+        0% { transform: translateX(0); }
+        40% { transform: translateX(30px) scale(1.1); }
+        100% { transform: translateX(0); }
+    }
+
+    @@keyframes heroCast {
+        0%, 100% { filter: drop-shadow(0 4px 8px rgba(0,0,0,0.8)); }
+        50% { filter: drop-shadow(0 4px 16px rgba(100, 180, 255, 0.8)) drop-shadow(0 0 20px rgba(100, 180, 255, 0.6)); }
+    }
+
+    @@keyframes heroHurt {
+        0%, 100% { transform: translateX(0); }
+        25% { transform: translateX(-8px); }
+        75% { transform: translateX(-4px); }
+    }
+
+    /* ── Enemy sprite ── */
+    .enemy-sprite {
+        width: 90px;
+        height: 90px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 4.5rem;
+        position: relative;
+        filter: drop-shadow(0 4px 10px rgba(200, 0, 0, 0.5));
+        transition: transform 0.15s ease;
+        z-index: 2;
+    }
+
+    .enemy-sprite.boss {
+        font-size: 5.5rem;
+        filter: drop-shadow(0 4px 12px rgba(200, 0, 200, 0.6));
+    }
+
+    .enemy-sprite.attacking {
+        animation: enemyAttack 0.4s ease;
+    }
+
+    .enemy-sprite.hurt {
+        animation: enemyHurt 0.25s ease;
+    }
+
+    .enemy-sprite.dead {
+        animation: enemyDeath 0.5s ease forwards;
+    }
+
+    @@keyframes enemyAttack {
+        0% { transform: translateX(0); }
+        40% { transform: translateX(-30px) scale(1.1); }
+        100% { transform: translateX(0); }
+    }
+
+    @@keyframes enemyHurt {
+        0%, 100% { transform: translateX(0) scale(1); }
+        50% { transform: translateX(8px) scale(0.9); filter: drop-shadow(0 0 20px rgba(255, 255, 255, 0.8)); }
+    }
+
+    @@keyframes enemyDeath {
+        0% { transform: scale(1); opacity: 1; }
+        50% { transform: scale(1.2) rotate(10deg); opacity: 0.6; }
+        100% { transform: scale(0.5) rotate(30deg) translateY(20px); opacity: 0; }
+    }
+
+    /* ── Projectile ── */
+    .projectile {
+        position: absolute;
+        font-size: 1.4rem;
+        pointer-events: none;
+        z-index: 10;
+        animation: projectileFly var(--duration, 0.4s) ease-out forwards;
+    }
+
+    @@keyframes projectileFly {
+        0% { transform: translateX(0) scale(1); opacity: 1; }
+        100% { transform: translateX(var(--travel, 200px)) scale(0.6); opacity: 0.2; }
+    }
+
+    /* ── Floating Numbers ── */
+    .float-num {
+        position: absolute;
+        font-family: 'Cinzel', serif;
+        font-weight: 700;
+        pointer-events: none;
+        z-index: 20;
+        animation: floatUp 1.4s ease-out forwards;
+        white-space: nowrap;
+        text-shadow: 1px 1px 2px #000, 0 0 6px rgba(0,0,0,0.8);
+        letter-spacing: 0.02em;
+    }
+
+    .float-num.dmg { color: var(--wow-dmg); font-size: 1.1rem; }
+    .float-num.crit { color: var(--wow-crit); font-size: 1.5rem; font-weight: 700; }
+    .float-num.heal { color: var(--wow-heal); font-size: 1rem; }
+    .float-num.miss { color: var(--wow-miss); font-size: 0.85rem; font-style: italic; }
+    .float-num.absorb { color: #8080ff; font-size: 0.9rem; }
+    .float-num.enemy-dmg { color: #ff8080; font-size: 1rem; }
+    .float-num.enemy-crit { color: #ff3030; font-size: 1.3rem; font-weight: 700; }
+
+    @@keyframes floatUp {
+        0% { transform: translateY(0) translateX(0) scale(0.8); opacity: 0; }
+        15% { opacity: 1; transform: translateY(-10px) translateX(var(--dx, 0px)) scale(1); }
+        70% { opacity: 1; }
+        100% { transform: translateY(-70px) translateX(var(--dx, 0px)) scale(0.9); opacity: 0; }
+    }
+
+    /* ── Wave indicator ── */
+    .wave-indicator {
+        position: absolute;
+        top: 6px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: rgba(0, 0, 0, 0.7);
+        border: 1px solid var(--wow-gold-border);
+        border-radius: 3px;
+        padding: 2px 10px;
+        font-family: 'Cinzel', serif;
+        font-size: 0.65rem;
+        color: var(--wow-gold);
+        letter-spacing: 0.08em;
+        text-align: center;
+        white-space: nowrap;
+    }
+
+    /* ── VS indicator ── */
+    .vs-badge {
+        position: absolute;
+        left: 50%;
+        bottom: 30px;
+        transform: translateX(-50%);
+        font-family: 'Cinzel', serif;
+        font-weight: 700;
+        font-size: 0.7rem;
+        color: rgba(255, 209, 0, 0.3);
+        letter-spacing: 0.2em;
+    }
+
+    /* ── Bottom Row: Combat Log + Action Bar ── */
+    .wow-bottom-row {
+        display: grid;
+        grid-template-columns: 1fr 340px;
+        gap: 0.6rem;
+        align-items: start;
+    }
+
+    /* ── Action Bar ── */
+    .action-bar-panel {
+        padding: 0.6rem 0.5rem;
+    }
+
+    .action-bar-label {
+        font-family: 'Cinzel', serif;
+        font-size: 0.58rem;
+        color: rgba(255, 209, 0, 0.5);
+        text-align: center;
+        letter-spacing: 0.12em;
+        margin-bottom: 0.4rem;
+    }
+
+    .action-bar {
+        display: grid;
+        grid-template-columns: repeat(6, 1fr);
+        gap: 4px;
+    }
+
+    .ability-btn {
+        aspect-ratio: 1;
+        background: #1a0f00;
+        border: 2px solid var(--wow-gold-border);
+        border-radius: 3px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        position: relative;
+        cursor: default;
+        overflow: hidden;
+        box-shadow: inset 0 0 6px rgba(0,0,0,0.8);
+        transition: border-color 0.15s;
+    }
+
+    .ability-btn.ready {
+        border-color: rgba(255, 209, 0, 0.6);
+        box-shadow: inset 0 0 6px rgba(0,0,0,0.5), 0 0 8px rgba(255, 209, 0, 0.2);
+    }
+
+    .ability-btn.active {
+        border-color: #fff;
+        box-shadow: 0 0 12px rgba(255, 255, 255, 0.5);
+        animation: abilityFlash 0.3s ease;
+    }
+
+    @@keyframes abilityFlash {
+        0%, 100% { box-shadow: 0 0 12px rgba(255, 255, 255, 0.4); }
+        50% { box-shadow: 0 0 24px rgba(255, 255, 255, 0.9); }
+    }
+
+    .ability-icon {
+        font-size: 1.5rem;
+        line-height: 1;
+    }
+
+    .ability-key {
+        position: absolute;
+        top: 1px;
+        left: 3px;
+        font-family: 'Cinzel', serif;
+        font-size: 0.5rem;
+        color: rgba(255, 255, 255, 0.7);
+        text-shadow: 1px 1px 1px #000;
+        line-height: 1;
+    }
+
+    .ability-name {
+        font-family: 'Cinzel', serif;
+        font-size: 0.42rem;
+        color: rgba(255, 230, 150, 0.8);
+        text-align: center;
+        margin-top: 1px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        width: 100%;
+        padding: 0 2px;
+    }
+
+    /* Cooldown sweep overlay */
+    .ability-cd-overlay {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        pointer-events: none;
+    }
+
+    .cd-sweep {
+        position: absolute;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.72);
+        transform-origin: center bottom;
+        clip-path: polygon(50% 50%, 50% 0%, 100% 0%, 100% 100%, 0% 100%, 0% 0%, 50% 0%);
+        transition: none;
+    }
+
+    .cd-text {
+        font-family: 'Cinzel', serif;
+        font-size: 0.65rem;
+        font-weight: 700;
+        color: #fff;
+        text-shadow: 1px 1px 2px #000;
+        position: relative;
+        z-index: 1;
+    }
+
+    /* ── Combat Log ── */
+    .combat-log-panel {
+        padding: 0.5rem;
+    }
+
+    .combat-log-header {
+        display: flex;
+        align-items: center;
+        gap: 0.4rem;
+        border-bottom: 1px solid rgba(139, 105, 20, 0.4);
+        padding-bottom: 0.3rem;
+        margin-bottom: 0.3rem;
+    }
+
+    .combat-log-header span {
+        font-family: 'Cinzel', serif;
+        font-size: 0.62rem;
+        color: var(--wow-gold);
+        letter-spacing: 0.08em;
+        flex: 1;
+    }
+
+    #clearLogBtn {
+        background: transparent;
+        border: 1px solid rgba(139, 105, 20, 0.5);
+        border-radius: 2px;
+        color: rgba(255, 209, 0, 0.6);
+        font-family: 'Cinzel', serif;
+        font-size: 0.5rem;
+        padding: 1px 6px;
+        cursor: pointer;
+        transition: all 0.15s;
+    }
+
+    #clearLogBtn:hover {
+        background: rgba(139, 105, 20, 0.3);
+        color: var(--wow-gold);
+    }
+
+    .combat-log-scroll {
+        height: 130px;
+        overflow-y: auto;
+        scrollbar-width: thin;
+        scrollbar-color: rgba(139, 105, 20, 0.5) transparent;
+    }
+
+    .combat-log-scroll::-webkit-scrollbar { width: 4px; }
+    .combat-log-scroll::-webkit-scrollbar-thumb { background: rgba(139, 105, 20, 0.5); border-radius: 2px; }
+    .combat-log-scroll::-webkit-scrollbar-track { background: transparent; }
+
+    .log-entry {
+        font-family: 'IM Fell English', 'Palatino Linotype', serif;
+        font-size: 0.7rem;
+        line-height: 1.5;
+        padding: 0.05rem 0.1rem;
+        border-bottom: 1px solid rgba(139, 105, 20, 0.1);
+    }
+
+    .log-entry .time { color: rgba(255, 209, 0, 0.4); font-size: 0.6rem; margin-right: 4px; }
+    .log-entry.dmg { color: #ffaaaa; }
+    .log-entry.crit { color: #ff8c00; font-weight: 600; }
+    .log-entry.heal { color: #80ffb0; }
+    .log-entry.ability { color: #aad4f5; }
+    .log-entry.system { color: rgba(255, 209, 0, 0.7); font-style: italic; }
+    .log-entry.death { color: #ff4040; font-weight: 600; }
+    .log-entry.buff { color: #d4b5e8; }
+    .log-entry.miss { color: #909090; }
+
+    /* ── Status Bar ── */
+    .wow-status-bar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0.4rem 0.8rem;
+    }
+
+    .status-stat {
+        text-align: center;
+    }
+
+    .status-stat-label {
+        font-size: 0.55rem;
+        color: rgba(255, 209, 0, 0.5);
+        letter-spacing: 0.1em;
+        display: block;
+        margin-bottom: 1px;
+    }
+
+    .status-stat-value {
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: var(--wow-gold);
+        text-shadow: 0 0 8px rgba(255, 209, 0, 0.4);
+    }
+
+    .status-divider {
+        width: 1px;
+        height: 28px;
+        background: rgba(139, 105, 20, 0.4);
+    }
+
+    /* ── Buff/Debuff icons ── */
+    .buffs-row {
+        display: flex;
+        gap: 3px;
+        min-height: 20px;
+        margin-top: 3px;
+    }
+
+    .buff-icon {
+        width: 18px;
+        height: 18px;
+        border: 1px solid var(--wow-gold-border);
+        border-radius: 2px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.75rem;
+        position: relative;
+        overflow: hidden;
+        background: #1a0f00;
+    }
+
+    .buff-icon .buff-dur {
+        position: absolute;
+        bottom: 0;
+        right: 0;
+        font-size: 0.4rem;
+        background: rgba(0,0,0,0.8);
+        color: #fff;
+        padding: 0 1px;
+        line-height: 1.2;
+    }
+
+    /* ── Victory / Defeat overlay ── */
+    .game-overlay {
+        position: fixed;
+        inset: 0;
+        z-index: 100;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        background: rgba(0, 0, 0, 0.85);
+        backdrop-filter: blur(4px);
+        animation: overlayFadeIn 0.5s ease;
+        display: none;
+    }
+
+    .game-overlay.active {
+        display: flex;
+    }
+
+    @@keyframes overlayFadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+    }
+
+    .overlay-title {
+        font-family: 'Cinzel', serif;
+        font-weight: 700;
+        font-size: clamp(2rem, 6vw, 4rem);
+        text-shadow: 0 0 40px currentColor;
+        animation: overlayPulse 2s ease infinite;
+        margin-bottom: 0.5rem;
+    }
+
+    .overlay-title.victory { color: var(--wow-gold); }
+    .overlay-title.defeat { color: #c82020; }
+
+    .overlay-subtitle {
+        font-family: 'IM Fell English', serif;
+        color: var(--wow-text-light);
+        font-size: clamp(0.85rem, 2vw, 1.1rem);
+        margin-bottom: 1.5rem;
+        text-align: center;
+        max-width: 400px;
+    }
+
+    .overlay-stats {
+        display: flex;
+        gap: 2rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .overlay-stat {
+        text-align: center;
+    }
+
+    .overlay-stat-val {
+        font-family: 'Cinzel', serif;
+        font-size: 1.8rem;
+        color: var(--wow-gold);
+        font-weight: 700;
+        display: block;
+    }
+
+    .overlay-stat-label {
+        font-size: 0.7rem;
+        color: #a09070;
+        letter-spacing: 0.1em;
+    }
+
+    @@keyframes overlayPulse {
+        0%, 100% { opacity: 1; transform: scale(1); }
+        50% { opacity: 0.85; transform: scale(1.03); }
+    }
+
+    .overlay-btn {
+        background: linear-gradient(to bottom, #c8960a, #7a5a00);
+        border: 2px solid var(--wow-gold);
+        border-radius: 3px;
+        color: var(--wow-gold);
+        font-family: 'Cinzel', serif;
+        font-size: 0.9rem;
+        font-weight: 600;
+        padding: 0.5rem 2rem;
+        cursor: pointer;
+        letter-spacing: 0.06em;
+        text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
+        box-shadow: 0 0 12px rgba(255, 209, 0, 0.3);
+        transition: all 0.15s;
+    }
+
+    .overlay-btn:hover {
+        background: linear-gradient(to bottom, #ffd100, #a07800);
+        color: #3a2000;
+        box-shadow: 0 0 20px rgba(255, 209, 0, 0.6);
+    }
+
+    /* ── Tooltip ── */
+    .ability-tooltip {
+        position: absolute;
+        bottom: calc(100% + 8px);
+        left: 50%;
+        transform: translateX(-50%);
+        background: rgba(5, 3, 1, 0.97);
+        border: 1px solid var(--wow-gold-border);
+        border-radius: 3px;
+        padding: 0.4rem 0.5rem;
+        min-width: 140px;
+        max-width: 180px;
+        z-index: 50;
+        display: none;
+        pointer-events: none;
+        box-shadow: 0 4px 16px rgba(0,0,0,0.9);
+    }
+
+    .ability-btn:hover .ability-tooltip { display: block; }
+
+    .tt-name {
+        font-family: 'Cinzel', serif;
+        font-size: 0.7rem;
+        font-weight: 600;
+        color: var(--wow-gold);
+        margin-bottom: 3px;
+    }
+
+    .tt-desc {
+        font-family: 'IM Fell English', serif;
+        font-size: 0.65rem;
+        color: #d4c8b0;
+        line-height: 1.4;
+        margin-bottom: 3px;
+    }
+
+    .tt-cd {
+        font-size: 0.58rem;
+        color: #8080a0;
+    }
+
+    /* ── Responsive ── */
+    @@media (max-width: 860px) {
+        .wow-top-row {
+            grid-template-columns: 1fr;
+        }
+        .wow-top-row .unit-frame:last-child {
+            order: 2;
+        }
+        .battle-arena { order: 3; }
+        .wow-bottom-row {
+            grid-template-columns: 1fr;
+        }
+        .action-bar {
+            grid-template-columns: repeat(6, 1fr);
+        }
+    }
+
+    @@media (max-width: 540px) {
+        .wow-game-container { padding: 0.5rem 0.4rem 1rem; }
+        .unit-portrait { width: 44px; height: 44px; font-size: 1.6rem; }
+        .hero-sprite { font-size: 2.5rem; width: 52px; height: 52px; }
+        .enemy-sprite { font-size: 3.5rem; width: 70px; height: 70px; }
+        .ability-icon { font-size: 1.2rem; }
+    }
+</style>
+
+<!-- Game Overlay (Victory / Defeat) -->
+<div class="game-overlay" id="gameOverlay">
+    <div class="overlay-title" id="overlayTitle">VICTORY</div>
+    <div class="overlay-subtitle" id="overlaySubtitle">The enemy has been defeated!</div>
+    <div class="overlay-stats" id="overlayStats"></div>
+    <button class="overlay-btn" id="overlayBtn" onclick="window.wowGame.restart()">⚔️ Play Again</button>
+</div>
+
+<div class="wow-page">
+    <div class="wow-game-container">
+
+        <!-- Title -->
+        <div class="wow-title-bar">
+            <h1>⚔️ Auto-Battle Simulator</h1>
+            <p>Your hero fights automatically — watch the battle unfold!</p>
+        </div>
+
+        <!-- Status Bar -->
+        <div class="wow-panel wow-status-bar">
+            <div class="status-stat">
+                <span class="status-stat-label">WAVE</span>
+                <span class="status-stat-value" id="statWave">1</span>
+            </div>
+            <div class="status-divider"></div>
+            <div class="status-stat">
+                <span class="status-stat-label">DAMAGE DEALT</span>
+                <span class="status-stat-value" id="statDmg">0</span>
+            </div>
+            <div class="status-divider"></div>
+            <div class="status-stat">
+                <span class="status-stat-label">KILLS</span>
+                <span class="status-stat-value" id="statKills">0</span>
+            </div>
+            <div class="status-divider"></div>
+            <div class="status-stat">
+                <span class="status-stat-label">HEALING DONE</span>
+                <span class="status-stat-value" id="statHeal">0</span>
+            </div>
+            <div class="status-divider"></div>
+            <div class="status-stat">
+                <span class="status-stat-label">SPEED</span>
+                <div style="display:flex;gap:3px;justify-content:center">
+                    <button onclick="window.wowGame.setSpeed(1)" id="spd1" class="overlay-btn" style="padding:1px 6px;font-size:0.55rem">1×</button>
+                    <button onclick="window.wowGame.setSpeed(2)" id="spd2" class="overlay-btn" style="padding:1px 6px;font-size:0.55rem">2×</button>
+                    <button onclick="window.wowGame.setSpeed(3)" id="spd3" class="overlay-btn" style="padding:1px 6px;font-size:0.55rem">3×</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Top Row: Player | Arena | Target -->
+        <div class="wow-top-row">
+
+            <!-- Player Unit Frame -->
+            <div class="wow-panel unit-frame" id="playerFrame">
+                <div class="unit-frame-inner">
+                    <div class="unit-portrait" id="playerPortrait">
+                        🧙‍♂️
+                        <div class="unit-portrait-overlay"></div>
+                    </div>
+                    <div class="unit-bars">
+                        <div class="unit-name">
+                            <span class="unit-level-badge" id="playerLevel">LV 60</span>
+                            <span id="playerName">Arthas the Brave</span>
+                        </div>
+                        <div class="bar-wrap">
+                            <div class="bar-fill hp" id="playerHpBar" style="width:100%"></div>
+                            <div class="bar-text" id="playerHpText">1500 / 1500</div>
+                        </div>
+                        <div class="bar-wrap">
+                            <div class="bar-fill mana" id="playerManaBar" style="width:100%"></div>
+                            <div class="bar-text" id="playerManaText">800 / 800</div>
+                        </div>
+                        <div class="buffs-row" id="playerBuffs"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Battle Arena -->
+            <div class="wow-panel battle-arena" id="battleArena">
+                <div class="wave-indicator" id="waveIndicator">⚔️ WAVE 1 — The Plaguelands</div>
+                <div class="battle-scene" id="battleScene">
+                    <div class="hero-sprite" id="heroSprite">🧙‍♂️</div>
+                    <div class="vs-badge">VS</div>
+                    <div class="enemy-sprite" id="enemySprite">👾</div>
+                </div>
+                <div class="battle-ground"></div>
+            </div>
+
+            <!-- Target (Enemy) Unit Frame -->
+            <div class="wow-panel unit-frame" id="targetFrame">
+                <div class="unit-frame-inner">
+                    <div class="unit-portrait" id="enemyPortrait">
+                        👾
+                        <div class="unit-portrait-overlay"></div>
+                    </div>
+                    <div class="unit-bars">
+                        <div class="unit-name">
+                            <span class="unit-level-badge" id="enemyLevel">LV 60</span>
+                            <span id="enemyName">Undead Warrior</span>
+                        </div>
+                        <div class="bar-wrap">
+                            <div class="bar-fill hp" id="enemyHpBar" style="width:100%"></div>
+                            <div class="bar-text" id="enemyHpText">1200 / 1200</div>
+                        </div>
+                        <div class="buffs-row" id="enemyBuffs"></div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Bottom Row: Combat Log | Action Bar -->
+        <div class="wow-bottom-row">
+
+            <!-- Combat Log -->
+            <div class="wow-panel combat-log-panel">
+                <div class="combat-log-header">
+                    <span>📜 COMBAT LOG</span>
+                    <button id="clearLogBtn" onclick="window.wowGame.clearLog()">Clear</button>
+                </div>
+                <div class="combat-log-scroll" id="combatLog"></div>
+            </div>
+
+            <!-- Action Bar -->
+            <div class="wow-panel action-bar-panel">
+                <div class="action-bar-label">ACTION BAR — AUTO CAST</div>
+                <div class="action-bar" id="actionBar"></div>
+            </div>
+
+        </div>
+
+    </div>
+</div>
+
+<script>
+(function () {
+    'use strict';
+
+    /* ============================================================
+       GAME DATA
+    ============================================================ */
+    const ABILITIES = [
+        {
+            id: 'autoattack',
+            name: 'Auto-Attack',
+            icon: '⚔️',
+            key: 'AA',
+            desc: 'Automatically strikes the target.',
+            cd: 1.8,
+            manaCost: 0,
+            type: 'melee',
+            dmgMin: 80, dmgMax: 150,
+            critChance: 0.15,
+            projectile: null,
+            color: '#ff8080',
+        },
+        {
+            id: 'fireball',
+            name: 'Fireball',
+            icon: '🔥',
+            key: '1',
+            desc: 'Hurls a ball of fire. Deals high damage.',
+            cd: 3.5,
+            manaCost: 120,
+            type: 'fire',
+            dmgMin: 200, dmgMax: 320,
+            critChance: 0.20,
+            projectile: '🔥',
+            color: '#ff6600',
+        },
+        {
+            id: 'frostbolt',
+            name: 'Frostbolt',
+            icon: '❄️',
+            key: '2',
+            desc: 'Slows the target and deals frost damage.',
+            cd: 4.0,
+            manaCost: 90,
+            type: 'frost',
+            dmgMin: 160, dmgMax: 240,
+            critChance: 0.18,
+            projectile: '❄️',
+            color: '#80d8ff',
+            debuff: { name: 'Chilled', icon: '🥶', dur: 4, id: 'chill' },
+        },
+        {
+            id: 'arcaneblast',
+            name: 'Arcane Blast',
+            icon: '💜',
+            key: '3',
+            desc: 'A powerful arcane explosion.',
+            cd: 6.0,
+            manaCost: 200,
+            type: 'arcane',
+            dmgMin: 350, dmgMax: 520,
+            critChance: 0.22,
+            projectile: '✨',
+            color: '#cc88ff',
+        },
+        {
+            id: 'heal',
+            name: 'Healing Wave',
+            icon: '💚',
+            key: '4',
+            desc: 'Restores a large amount of health.',
+            cd: 8.0,
+            manaCost: 150,
+            type: 'heal',
+            healMin: 300, healMax: 450,
+            critChance: 0.12,
+            projectile: null,
+            color: '#00e680',
+            buff: { name: 'Rejuvenated', icon: '💚', dur: 3, id: 'rejuv' },
+        },
+        {
+            id: 'shield',
+            name: 'Mana Shield',
+            icon: '🛡️',
+            key: '5',
+            desc: 'Absorbs incoming damage for 6 seconds.',
+            cd: 12.0,
+            manaCost: 80,
+            type: 'shield',
+            dmgMin: 0, dmgMax: 0,
+            color: '#8080ff',
+            buff: { name: 'Shielded', icon: '🛡️', dur: 6, id: 'shield' },
+        },
+    ];
+
+    const ENEMY_TYPES = [
+        { name: 'Undead Warrior',   icon: '💀', level: 58, hp: 1000, dmgMin: 60, dmgMax: 110, attackSpeed: 2.0, isBoss: false, xp: 100 },
+        { name: 'Plague Bat',        icon: '🦇', level: 56, hp: 700,  dmgMin: 45, dmgMax: 85,  attackSpeed: 1.4, isBoss: false, xp: 80 },
+        { name: 'Crypt Fiend',       icon: '🕷️', level: 60, hp: 1300, dmgMin: 80, dmgMax: 140, attackSpeed: 2.2, isBoss: false, xp: 150 },
+        { name: 'Frost Wyrm',        icon: '🐉', level: 62, hp: 2000, dmgMin: 100, dmgMax: 180, attackSpeed: 3.0, isBoss: false, xp: 220 },
+        { name: 'Banshee Queen',     icon: '👻', level: 63, hp: 1600, dmgMin: 90, dmgMax: 165, attackSpeed: 1.8, isBoss: false, xp: 200 },
+        { name: 'Fel Orc Brute',     icon: '👹', level: 65, hp: 2200, dmgMin: 120, dmgMax: 200, attackSpeed: 2.5, isBoss: false, xp: 280 },
+        { name: 'Naxxramas Sentinel',icon: '🤖', level: 68, hp: 2800, dmgMin: 140, dmgMax: 230, attackSpeed: 2.8, isBoss: false, xp: 350 },
+        { name: '☠️ LICH KING',      icon: '💎', level: 80, hp: 5000, dmgMin: 200, dmgMax: 380, attackSpeed: 3.5, isBoss: true,  xp: 1000 },
+    ];
+
+    const WAVE_CONFIGS = [
+        { name: 'The Plaguelands',  enemies: [0, 1],       bg: 'rgba(139,69,19,0.06)' },
+        { name: 'Naxxramas Entry',  enemies: [1, 2, 2],    bg: 'rgba(80,0,120,0.06)' },
+        { name: 'Icecrown Spire',   enemies: [2, 3],       bg: 'rgba(0,60,120,0.06)' },
+        { name: 'Banshee Hollow',   enemies: [4, 4, 5],    bg: 'rgba(100,0,80,0.06)' },
+        { name: 'Fel Citadel',      enemies: [5, 6],       bg: 'rgba(120,60,0,0.06)' },
+        { name: 'Frozen Throne',    enemies: [7],          bg: 'rgba(0,80,160,0.07)' },
+    ];
+
+    /* ============================================================
+       GAME STATE
+    ============================================================ */
+    const state = {
+        running: false,
+        speed: 1,
+        wave: 0,
+        enemyIndex: 0,
+        player: null,
+        enemy: null,
+        abilityCooldowns: {},
+        totalDmg: 0,
+        totalHeal: 0,
+        kills: 0,
+        lastTick: 0,
+        combatTimer: 0,
+        floatIdCounter: 0,
+        logCount: 0,
+        enemyAttackTimer: 0,
+        playerBuffs: [],
+        enemyDebuffs: [],
+        projectiles: [],
+        gameOver: false,
+        paused: false,
+    };
+
+    /* ============================================================
+       HELPERS
+    ============================================================ */
+    function rng(min, max) {
+        return Math.floor(Math.random() * (max - min + 1)) + min;
+    }
+
+    function clamp(val, min, max) {
+        return Math.max(min, Math.min(max, val));
+    }
+
+    function formatNum(n) {
+        if (n >= 1000000) return (n / 1000000).toFixed(1) + 'M';
+        if (n >= 1000) return (n / 1000).toFixed(1) + 'K';
+        return n.toString();
+    }
+
+    function el(id) { return document.getElementById(id); }
+
+    function now() { return performance.now(); }
+
+    /* ============================================================
+       DOM HELPERS
+    ============================================================ */
+    function setBar(barId, textId, current, max, type) {
+        const pct = clamp((current / max) * 100, 0, 100);
+        const bar = el(barId);
+        const txt = el(textId);
+        if (!bar || !txt) return;
+        bar.style.width = pct + '%';
+        txt.textContent = Math.max(0, Math.floor(current)) + ' / ' + Math.floor(max);
+
+        if (type === 'hp') {
+            bar.className = 'bar-fill hp';
+            if (pct <= 30) bar.classList.add('low');
+            else if (pct <= 60) bar.classList.add('medium');
+        }
+    }
+
+    function spawnFloatNum(targetEl, text, cssClass, dx) {
+        const container = el('battleArena');
+        if (!container) return;
+        const rect = targetEl.getBoundingClientRect();
+        const arenaRect = container.getBoundingClientRect();
+        const div = document.createElement('div');
+        div.className = 'float-num ' + cssClass;
+        div.textContent = text;
+        div.style.left = (rect.left - arenaRect.left + rect.width / 2 - 20) + 'px';
+        div.style.top = (rect.top - arenaRect.top) + 'px';
+        div.style.setProperty('--dx', (dx || rng(-25, 25)) + 'px');
+        div.style.position = 'absolute';
+        container.style.position = 'relative';
+        container.appendChild(div);
+        div.addEventListener('animationend', () => div.remove());
+    }
+
+    function addLog(text, cssClass) {
+        const log = el('combatLog');
+        if (!log) return;
+        const d = new Date();
+        const time = d.getHours().toString().padStart(2, '0') + ':' + d.getMinutes().toString().padStart(2, '0') + ':' + d.getSeconds().toString().padStart(2, '0');
+        const entry = document.createElement('div');
+        entry.className = 'log-entry ' + (cssClass || '');
+        const ts = document.createElement('span');
+        ts.className = 'time';
+        ts.textContent = time;
+        entry.appendChild(ts);
+        entry.appendChild(document.createTextNode(text));
+        log.appendChild(entry);
+        // Keep log manageable
+        state.logCount++;
+        if (state.logCount > 200) {
+            log.removeChild(log.firstChild);
+            state.logCount--;
+        }
+        log.scrollTop = log.scrollHeight;
+    }
+
+    function animateSprite(id, cls, duration) {
+        const sprite = el(id);
+        if (!sprite) return;
+        sprite.classList.add(cls);
+        setTimeout(() => sprite.classList.remove(cls), duration || 400);
+    }
+
+    function launchProjectile(emoji, fromId, toId, duration) {
+        const arena = el('battleArena');
+        const from = el(fromId);
+        const to = el(toId);
+        if (!arena || !from || !to) return;
+        const fromRect = from.getBoundingClientRect();
+        const toRect = to.getBoundingClientRect();
+        const arenaRect = arena.getBoundingClientRect();
+        const startX = fromRect.left - arenaRect.left + fromRect.width / 2;
+        const startY = fromRect.top - arenaRect.top + fromRect.height / 2;
+        const travel = toRect.left - fromRect.left;
+        const p = document.createElement('div');
+        p.className = 'projectile';
+        p.textContent = emoji;
+        p.style.left = startX + 'px';
+        p.style.top = startY + 'px';
+        p.style.setProperty('--travel', travel + 'px');
+        p.style.setProperty('--duration', (duration || 400) + 'ms');
+        arena.style.position = 'relative';
+        arena.appendChild(p);
+        p.addEventListener('animationend', () => p.remove());
+    }
+
+    /* ============================================================
+       BUFF / DEBUFF SYSTEM
+    ============================================================ */
+    function renderBuffs(buffs, elId) {
+        const container = el(elId);
+        if (!container) return;
+        container.innerHTML = '';
+        buffs.forEach(b => {
+            const d = document.createElement('div');
+            d.className = 'buff-icon';
+            d.title = b.name;
+            d.textContent = b.icon;
+            const dur = document.createElement('span');
+            dur.className = 'buff-dur';
+            dur.textContent = Math.ceil(b.remaining) + 's';
+            d.appendChild(dur);
+            container.appendChild(d);
+        });
+    }
+
+    function tickBuffs(buffs, dt) {
+        for (let i = buffs.length - 1; i >= 0; i--) {
+            buffs[i].remaining -= dt;
+            if (buffs[i].remaining <= 0) {
+                buffs.splice(i, 1);
+            }
+        }
+    }
+
+    function hasBuff(buffs, id) {
+        return buffs.some(b => b.id === id);
+    }
+
+    function addBuff(buffs, buffDef) {
+        const existing = buffs.find(b => b.id === buffDef.id);
+        if (existing) {
+            existing.remaining = buffDef.dur;
+        } else {
+            buffs.push({ ...buffDef, remaining: buffDef.dur });
+        }
+    }
+
+    /* ============================================================
+       ACTION BAR RENDERING
+    ============================================================ */
+    function renderActionBar() {
+        const bar = el('actionBar');
+        if (!bar) return;
+        bar.innerHTML = '';
+        ABILITIES.forEach((ab, i) => {
+            const btn = document.createElement('div');
+            btn.className = 'ability-btn';
+            btn.id = 'ab_' + ab.id;
+            btn.innerHTML = `
+                <span class="ability-key">${ab.key}</span>
+                <span class="ability-icon">${ab.icon}</span>
+                <span class="ability-name">${ab.name}</span>
+                <div class="ability-cd-overlay" id="cd_${ab.id}"></div>
+                <div class="ability-tooltip">
+                    <div class="tt-name">${ab.icon} ${ab.name}</div>
+                    <div class="tt-desc">${ab.desc}</div>
+                    <div class="tt-cd">Cooldown: ${ab.cd.toFixed(1)}s${ab.manaCost ? ' · Mana: ' + ab.manaCost : ''}</div>
+                </div>
+            `;
+            bar.appendChild(btn);
+        });
+    }
+
+    function updateActionBar(dt) {
+        ABILITIES.forEach(ab => {
+            const cd = state.abilityCooldowns[ab.id] || 0;
+        const overlay = el('cd_' + ab.id);
+        const btn = el('ab_' + ab.id);
+        if (!overlay || !btn) return;
+
+        if (cd > 0) {
+            const pct = cd / ab.cd;
+            // Sweep: draw a radial cull based on cd percentage
+            overlay.innerHTML = `<div class="cd-sweep" style="clip-path:${getSweepClipPath(pct)}"></div><span class="cd-text">${cd.toFixed(1)}</span>`;
+            btn.classList.remove('ready', 'active');
+        } else {
+            overlay.innerHTML = '';
+            btn.classList.add('ready');
+        }
+        });
+    }
+
+    function getSweepClipPath(pct) {
+        // Build clock-sweep clip-path polygon from pct (0=empty, 1=full coverage)
+        if (pct <= 0) return 'none';
+        if (pct >= 1) return 'polygon(50% 50%, 50% 0%, 100% 0%, 100% 100%, 0% 100%, 0% 0%, 50% 0%)';
+        const angle = pct * 360;
+        const rad = (angle - 90) * Math.PI / 180;
+        const ex = 50 + 60 * Math.cos(rad);
+        const ey = 50 + 60 * Math.sin(rad);
+        const points = ['50% 50%', '50% 0%'];
+        // Add corners as needed for the sweep
+        const corners = [
+            [100, 0], [100, 100], [0, 100], [0, 0]
+        ];
+        let covered = 0;
+        for (let i = 0; i < corners.length; i++) {
+            const cornerAngle = [45, 135, 225, 315][i];
+            if (angle > cornerAngle) {
+                points.push(corners[i][0] + '% ' + corners[i][1] + '%');
+            }
+        }
+        points.push(clamp(ex, 0, 100).toFixed(1) + '% ' + clamp(ey, 0, 100).toFixed(1) + '%');
+        return 'polygon(' + points.join(', ') + ')';
+    }
+
+    function flashAbility(abId) {
+        const btn = el('ab_' + abId);
+        if (!btn) return;
+        btn.classList.add('active');
+        setTimeout(() => btn.classList.remove('active'), 350);
+    }
+
+    /* ============================================================
+       ENEMY SPAWNING
+    ============================================================ */
+    function getWaveConfig() {
+        const waveIdx = clamp(state.wave - 1, 0, WAVE_CONFIGS.length - 1);
+        return WAVE_CONFIGS[waveIdx];
+    }
+
+    function spawnEnemy() {
+        const waveConf = getWaveConfig();
+        const enemyList = waveConf.enemies;
+        const idx = enemyList[state.enemyIndex % enemyList.length];
+        const def = ENEMY_TYPES[idx];
+
+        // Scale by wave
+        const waveMult = 1 + (state.wave - 1) * 0.25;
+        state.enemy = {
+            name: def.name,
+            icon: def.icon,
+            level: def.level,
+            hp: Math.floor(def.hp * waveMult),
+            maxHp: Math.floor(def.hp * waveMult),
+            dmgMin: Math.floor(def.dmgMin * waveMult),
+            dmgMax: Math.floor(def.dmgMax * waveMult),
+            attackSpeed: def.attackSpeed,
+            isBoss: def.isBoss,
+            xp: def.xp,
+        };
+        state.enemyAttackTimer = state.enemy.attackSpeed;
+
+        // Update enemy UI
+        el('enemyName').textContent = def.name;
+        el('enemyLevel').textContent = 'LV ' + def.level;
+        el('enemyPortrait').textContent = def.icon;
+        el('enemySprite').textContent = def.icon;
+        el('enemySprite').className = 'enemy-sprite' + (def.isBoss ? ' boss' : '');
+        el('enemyPortrait').classList.remove('dead');
+        el('enemyBuffs').innerHTML = '';
+
+        setBar('enemyHpBar', 'enemyHpText', state.enemy.hp, state.enemy.maxHp, 'hp');
+        addLog('⚔️ ' + def.name + ' appeared! HP: ' + state.enemy.maxHp, 'system');
+    }
+
+    /* ============================================================
+       AI DECISION MAKING
+    ============================================================ */
+    function pickAbility() {
+        const p = state.player;
+        const e = state.enemy;
+        const hpPct = p.hp / p.maxHp;
+        const mana = p.mana;
+        const cds = state.abilityCooldowns;
+
+        // Priority: heal if low health, shield if very low, arcane/fire/frost for damage, auto-attack fallback
+        const abilityOrder = [];
+
+        // Use shield if health < 25% and no shield up
+        if (hpPct < 0.25 && !hasBuff(state.playerBuffs, 'shield') && !(cds['shield'] > 0) && mana >= 80) {
+            abilityOrder.push('shield');
+        }
+
+        // Heal if health < 50%
+        if (hpPct < 0.50 && !(cds['heal'] > 0) && mana >= 150) {
+            abilityOrder.push('heal');
+        }
+
+        // Arcane Blast if off cd and enough mana
+        if (!(cds['arcaneblast'] > 0) && mana >= 200) {
+            abilityOrder.push('arcaneblast');
+        }
+
+        // Fireball
+        if (!(cds['fireball'] > 0) && mana >= 120) {
+            abilityOrder.push('fireball');
+        }
+
+        // Frostbolt
+        if (!(cds['frostbolt'] > 0) && mana >= 90) {
+            abilityOrder.push('frostbolt');
+        }
+
+        // Auto-attack always fallback
+        abilityOrder.push('autoattack');
+
+        return abilityOrder[0] || 'autoattack';
+    }
+
+    /* ============================================================
+       COMBAT EXECUTION
+    ============================================================ */
+    function useAbility(abId) {
+        const ab = ABILITIES.find(a => a.id === abId);
+        if (!ab || !state.enemy || !state.running) return;
+
+        const p = state.player;
+        const e = state.enemy;
+
+        // Deduct mana
+        p.mana = Math.max(0, p.mana - ab.manaCost);
+
+        // Set cooldown
+        state.abilityCooldowns[ab.id] = ab.cd;
+
+        // Flash button
+        flashAbility(ab.id);
+
+        // Heal ability
+        if (ab.type === 'heal') {
+            const healAmt = rng(ab.healMin, ab.healMax);
+            const isCrit = Math.random() < ab.critChance;
+            const actual = isCrit ? Math.floor(healAmt * 1.5) : healAmt;
+            p.hp = Math.min(p.maxHp, p.hp + actual);
+            state.totalHeal += actual;
+            el('statHeal').textContent = formatNum(state.totalHeal);
+
+            animateSprite('heroSprite', 'casting', 600);
+            spawnFloatNum(el('heroSprite'), (isCrit ? '✨ CRIT +' : '+') + actual, 'heal');
+            addLog((isCrit ? '✨ CRITICAL HEAL! ' : '') + 'You cast Healing Wave, restoring ' + actual + ' HP.', isCrit ? 'crit' : 'heal');
+
+            if (ab.buff) addBuff(state.playerBuffs, ab.buff);
+            return;
+        }
+
+        // Shield ability
+        if (ab.type === 'shield') {
+            addBuff(state.playerBuffs, ab.buff);
+            animateSprite('heroSprite', 'casting', 600);
+            spawnFloatNum(el('heroSprite'), '🛡️ SHIELDED!', 'absorb');
+            addLog('🛡️ You cast Mana Shield. Incoming damage will be reduced!', 'buff');
+            return;
+        }
+
+        // Damage abilities
+        const isCrit = Math.random() < ab.critChance;
+        const isMiss = Math.random() < 0.05; // 5% miss chance
+        let dmgAmt = 0;
+
+        if (isMiss) {
+            addLog('You used ' + ab.name + ' but it missed!', 'miss');
+            spawnFloatNum(el('enemySprite'), 'MISS', 'miss');
+        } else {
+            dmgAmt = rng(ab.dmgMin, ab.dmgMax);
+            if (isCrit) dmgAmt = Math.floor(dmgAmt * 2);
+            state.totalDmg += dmgAmt;
+            el('statDmg').textContent = formatNum(state.totalDmg);
+
+            e.hp = Math.max(0, e.hp - dmgAmt);
+
+            // Sprite animations
+            if (ab.type === 'melee') {
+                animateSprite('heroSprite', 'attacking', 400);
+            } else {
+                animateSprite('heroSprite', 'casting', 600);
+                if (ab.projectile) {
+                    launchProjectile(ab.projectile, 'heroSprite', 'enemySprite', 350);
+                }
+            }
+
+            setTimeout(() => {
+                animateSprite('enemySprite', 'hurt', 300);
+                spawnFloatNum(el('enemySprite'), (isCrit ? '💥 ' : '') + dmgAmt, isCrit ? 'crit' : 'dmg', 0);
+            }, ab.projectile ? 300 : 0);
+
+            // Debuff
+            if (ab.debuff && e.hp > 0) {
+                addBuff(state.enemyDebuffs, ab.debuff);
+            }
+
+            const logText = isCrit
+                ? `💥 CRITICAL STRIKE! ${ab.name} critically hit ${e.name} for ${dmgAmt} damage!`
+                : `${ab.icon} Your ${ab.name} hit ${e.name} for ${dmgAmt} damage.`;
+            addLog(logText, isCrit ? 'crit' : 'ability');
+        }
+
+        // Update enemy bars
+        setBar('enemyHpBar', 'enemyHpText', e.hp, e.maxHp, 'hp');
+
+        // Check enemy death
+        if (e.hp <= 0) {
+            handleEnemyDeath();
+        }
+    }
+
+    function handleEnemyDeath() {
+        state.kills++;
+        el('statKills').textContent = state.kills;
+        animateSprite('enemySprite', 'dead', 500);
+        el('enemyPortrait').classList.add('dead');
+
+        addLog('💀 ' + state.enemy.name + ' has been slain!', 'death');
+
+        state.running = false;
+        state.enemy = null;
+
+        // Regen some mana on kill
+        state.player.mana = Math.min(state.player.maxMana, state.player.mana + 150);
+
+        setTimeout(() => {
+            state.enemyIndex++;
+            const waveConf = getWaveConfig();
+            if (state.enemyIndex >= waveConf.enemies.length) {
+                // Wave complete
+                state.enemyIndex = 0;
+                state.wave++;
+                el('statWave').textContent = state.wave;
+
+                if (state.wave > WAVE_CONFIGS.length) {
+                    // Victory!
+                    showOverlay(true);
+                    return;
+                }
+
+                const nextWave = getWaveConfig();
+                el('waveIndicator').textContent = '⚔️ WAVE ' + state.wave + ' — ' + nextWave.name;
+                addLog('🏆 WAVE ' + (state.wave - 1) + ' COMPLETE! Preparing Wave ' + state.wave + '...', 'system');
+
+                setTimeout(() => {
+                    spawnEnemy();
+                    state.running = true;
+                }, 2000);
+            } else {
+                // Next enemy in wave
+                spawnEnemy();
+                state.running = true;
+            }
+        }, 800);
+    }
+
+    function enemyAttack() {
+        const p = state.player;
+        const e = state.enemy;
+
+        const isCrit = Math.random() < 0.10;
+        const isMiss = Math.random() < 0.08;
+
+        if (isMiss) {
+            addLog(e.name + ' attacked but missed!', 'miss');
+            spawnFloatNum(el('heroSprite'), 'MISS', 'miss');
+            return;
+        }
+
+        let dmg = rng(e.dmgMin, e.dmgMax);
+        if (isCrit) dmg = Math.floor(dmg * 1.8);
+
+        // Check shield
+        if (hasBuff(state.playerBuffs, 'shield')) {
+            const absorbed = Math.floor(dmg * 0.45);
+            dmg -= absorbed;
+            spawnFloatNum(el('heroSprite'), '-' + absorbed + ' absorbed', 'absorb');
+        }
+
+        p.hp = Math.max(0, p.hp - dmg);
+
+        animateSprite('enemySprite', 'attacking', 400);
+        setTimeout(() => {
+            animateSprite('heroSprite', 'hurt', 300);
+            spawnFloatNum(el('heroSprite'), (isCrit ? '💢 ' : '') + dmg, isCrit ? 'enemy-crit' : 'enemy-dmg', 0);
+        }, 250);
+
+        addLog(
+            isCrit
+                ? `💢 CRITICAL! ${e.name} strikes you for ${dmg} damage!`
+                : `${e.name} attacks you for ${dmg} damage.`,
+            isCrit ? 'crit' : 'dmg'
+        );
+
+        setBar('playerHpBar', 'playerHpText', p.hp, p.maxHp, 'hp');
+
+        if (p.hp <= 0) {
+            handlePlayerDeath();
+        }
+    }
+
+    function handlePlayerDeath() {
+        state.running = false;
+        el('heroSprite').textContent = '💀';
+        el('playerPortrait').classList.add('dead');
+        addLog('☠️ You have been slain! Press Play Again to continue.', 'death');
+        setTimeout(() => showOverlay(false), 500);
+    }
+
+    /* ============================================================
+       GAME LOOP
+    ============================================================ */
+    let rafId = null;
+
+    function gameLoop(timestamp) {
+        if (state.gameOver) return;
+        rafId = requestAnimationFrame(gameLoop);
+
+        const dt = Math.min((timestamp - state.lastTick) / 1000, 0.1) * state.speed;
+        state.lastTick = timestamp;
+
+        if (!state.running) return;
+
+        const p = state.player;
+        const e = state.enemy;
+        if (!p || !e) return;
+
+        // Tick cooldowns
+        for (const key in state.abilityCooldowns) {
+            state.abilityCooldowns[key] = Math.max(0, state.abilityCooldowns[key] - dt);
+        }
+
+        // Tick buffs/debuffs
+        tickBuffs(state.playerBuffs, dt);
+        tickBuffs(state.enemyDebuffs, dt);
+
+        // Update action bar overlays
+        updateActionBar(dt);
+
+        // Render buffs
+        renderBuffs(state.playerBuffs, 'playerBuffs');
+        renderBuffs(state.enemyDebuffs, 'enemyBuffs');
+
+        // Update mana bars
+        setBar('playerManaBar', 'playerManaText', p.mana, p.maxMana, 'mana');
+        setBar('playerHpBar', 'playerHpText', p.hp, p.maxHp, 'hp');
+
+        // Mana regen
+        p.mana = Math.min(p.maxMana, p.mana + dt * 15);
+
+        // Player AI: pick and use ability
+        state.combatTimer -= dt;
+        if (state.combatTimer <= 0) {
+            const chosenAbility = pickAbility();
+            const ab = ABILITIES.find(a => a.id === chosenAbility);
+            if (ab) {
+                useAbility(chosenAbility);
+                // Reset combat timer to that ability's cooldown (or autoattack speed)
+                state.combatTimer = ab.type === 'melee' ? ab.cd : 0.15 + Math.random() * 0.2;
+            } else {
+                state.combatTimer = ABILITIES[0].cd; // auto-attack fallback
+                useAbility('autoattack');
+            }
+        }
+
+        // Enemy attack timer
+        if (e && e.hp > 0) {
+            state.enemyAttackTimer -= dt;
+            if (state.enemyAttackTimer <= 0) {
+                enemyAttack();
+                state.enemyAttackTimer = e.attackSpeed;
+            }
+        }
+    }
+
+    /* ============================================================
+       GAME SETUP / RESTART
+    ============================================================ */
+    function initPlayer() {
+        state.player = {
+            name: 'Arthas the Brave',
+            icon: '🧙‍♂️',
+            level: 60,
+            hp: 1500,
+            maxHp: 1500,
+            mana: 800,
+            maxMana: 800,
+        };
+    }
+
+    function resetState() {
+        state.running = false;
+        state.wave = 1;
+        state.enemyIndex = 0;
+        state.enemy = null;
+        state.abilityCooldowns = {};
+        state.totalDmg = 0;
+        state.totalHeal = 0;
+        state.kills = 0;
+        state.combatTimer = 0;
+        state.enemyAttackTimer = 0;
+        state.playerBuffs = [];
+        state.enemyDebuffs = [];
+        state.gameOver = false;
+        state.lastTick = performance.now();
+    }
+
+    function startGame() {
+        resetState();
+        initPlayer();
+
+        // Reset UI
+        el('heroSprite').textContent = '🧙‍♂️';
+        el('playerPortrait').textContent = '🧙‍♂️';
+        el('playerPortrait').classList.remove('dead');
+        el('statWave').textContent = '1';
+        el('statDmg').textContent = '0';
+        el('statKills').textContent = '0';
+        el('statHeal').textContent = '0';
+        el('combatLog').innerHTML = '';
+        state.logCount = 0;
+        el('playerBuffs').innerHTML = '';
+        el('enemyBuffs').innerHTML = '';
+
+        setBar('playerHpBar', 'playerHpText', state.player.hp, state.player.maxHp, 'hp');
+        setBar('playerManaBar', 'playerManaText', state.player.mana, state.player.maxMana, 'mana');
+
+        el('waveIndicator').textContent = '⚔️ WAVE 1 — ' + WAVE_CONFIGS[0].name;
+
+        renderActionBar();
+        spawnEnemy();
+
+        addLog('⚔️ Combat has begun! Your hero fights automatically.', 'system');
+        addLog('💡 Watch the action bar as abilities are cast automatically.', 'system');
+
+        state.running = true;
+
+        if (rafId) cancelAnimationFrame(rafId);
+        state.lastTick = performance.now();
+        rafId = requestAnimationFrame(gameLoop);
+    }
+
+    /* ============================================================
+       OVERLAY
+    ============================================================ */
+    function showOverlay(isVictory) {
+        state.gameOver = true;
+        state.running = false;
+
+        const overlay = el('gameOverlay');
+        const title = el('overlayTitle');
+        const subtitle = el('overlaySubtitle');
+        const statsEl = el('overlayStats');
+
+        title.textContent = isVictory ? '🏆 VICTORY!' : '💀 DEFEAT';
+        title.className = 'overlay-title ' + (isVictory ? 'victory' : 'defeat');
+        subtitle.textContent = isVictory
+            ? 'The Lich King has been defeated! Azeroth is saved!'
+            : 'You have fallen in battle. Rise again, champion!';
+
+        statsEl.innerHTML = `
+            <div class="overlay-stat">
+                <span class="overlay-stat-val">${el('statWave').textContent}</span>
+                <span class="overlay-stat-label">WAVES</span>
+            </div>
+            <div class="overlay-stat">
+                <span class="overlay-stat-val">${formatNum(state.totalDmg)}</span>
+                <span class="overlay-stat-label">DAMAGE</span>
+            </div>
+            <div class="overlay-stat">
+                <span class="overlay-stat-val">${state.kills}</span>
+                <span class="overlay-stat-label">KILLS</span>
+            </div>
+            <div class="overlay-stat">
+                <span class="overlay-stat-val">${formatNum(state.totalHeal)}</span>
+                <span class="overlay-stat-label">HEALED</span>
+            </div>
+        `;
+
+        overlay.classList.add('active');
+    }
+
+    /* ============================================================
+       PUBLIC API
+    ============================================================ */
+    window.wowGame = {
+        restart() {
+            el('gameOverlay').classList.remove('active');
+            startGame();
+        },
+        setSpeed(s) {
+            state.speed = s;
+            ['spd1', 'spd2', 'spd3'].forEach((id, i) => {
+                const btn = el(id);
+                if (btn) {
+                    btn.style.opacity = (i + 1 === s) ? '1' : '0.5';
+                    btn.style.borderColor = (i + 1 === s) ? 'var(--wow-gold)' : 'rgba(139,105,20,0.5)';
+                }
+            });
+        },
+        clearLog() {
+            const log = el('combatLog');
+            if (log) { log.innerHTML = ''; state.logCount = 0; }
+        }
+    };
+
+    /* ============================================================
+       INIT
+    ============================================================ */
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', () => {
+            startGame();
+            window.wowGame.setSpeed(1);
+        });
+    } else {
+        startGame();
+        window.wowGame.setSpeed(1);
+    }
+
+})();
+</script>
