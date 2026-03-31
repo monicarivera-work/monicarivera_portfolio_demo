@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -98,11 +99,29 @@ Software Engineer II at Microsoft with deep expertise in cloud-based and distrib
             _logger = logger;
         }
 
+        private const int MaxMessageLength = 2000;
+        private const int MaxHistoryContentLength = 2000;
+
         [HttpPost("message")]
+        [EnableRateLimiting("ChatRateLimit")]
         public async Task<IActionResult> Message([FromBody] ChatRequest request)
         {
             if (string.IsNullOrWhiteSpace(request.Message))
                 return BadRequest(new { error = "Message is required." });
+
+            if (request.Message.Length > MaxMessageLength)
+                return BadRequest(new { error = $"Message exceeds maximum length of {MaxMessageLength} characters." });
+
+            // Trim oversized history content to prevent token-stuffing via history
+            foreach (var msg in request.History)
+            {
+                if (msg.Content.Length > MaxHistoryContentLength)
+                {
+                    _logger.LogWarning("History message content truncated from {Original} to {Max} characters",
+                        msg.Content.Length, MaxHistoryContentLength);
+                    msg.Content = msg.Content[..MaxHistoryContentLength];
+                }
+            }
 
             var apiKey = _configuration[Constants.AnthropicApiKeyName];
             var contactEmail = _configuration[Constants.EmailAddressKey] ?? string.Empty;
