@@ -9,6 +9,7 @@ namespace PortfolioDemo.Pages
         private readonly IConfiguration _configuration;
 
         public string? ContactEmail { get; private set; }
+        public string? ContactPhone { get; private set; }
 
         public AboutModel(ILogger<AboutModel> logger, IConfiguration configuration)
         {
@@ -20,6 +21,7 @@ namespace PortfolioDemo.Pages
         {
             _logger.LogInformation("About page visited");
             ContactEmail = _configuration[Constants.EmailAddressKey];
+            ContactPhone = _configuration[Constants.PhoneNumberKey];
         }
     }
 

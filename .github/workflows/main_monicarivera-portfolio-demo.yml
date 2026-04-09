@@ -73,6 +73,8 @@ jobs:
     needs: build
     env:
       RESUME_FILE_NAME: ${{ secrets.RESUME_FILE_NAME }}
+      EMAIL_ADDRESS: ${{ secrets.EMAIL_ADDRESS }}
+      PHONE_NUMBER: ${{ secrets.PHONE_NUMBER }}
       APPLICATIONINSIGHTS_CONNECTION_STRING: ${{ secrets.APPLICATIONINSIGHTS_CONNECTION_STRING }}
     if: github.event_name != 'pull_request'
     environment:

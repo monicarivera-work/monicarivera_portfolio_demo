@@ -13,14 +13,20 @@
             <h2 class="h3 mb-3">Monica Leigh A. Rivera</h2>
             @if (!string.IsNullOrWhiteSpace(Model.ContactEmail))
             {
-                <p class="lead mb-4">
+                <p class="lead mb-2">
                     <strong>Email:</strong> <a href="mailto:@Model.ContactEmail">@Model.ContactEmail</a>
+                </p>
+            }
+            @if (!string.IsNullOrWhiteSpace(Model.ContactPhone))
+            {
+                <p class="lead mb-4">
+                    <strong>Phone:</strong> <a href="tel:@Model.ContactPhone">@Model.ContactPhone</a>
                 </p>
             }
 
             <h2 class="mt-5 mb-3">Professional Summary</h2>
             <p>
-                Software Engineer II at Microsoft with deep expertise in cloud-based and distributed systems on Azure. Designs and ships production-quality C# and .NET solutions end-to-end — from requirements and architecture through deployment and operational health. Brings a "learn-it-all" mindset, a sharp eye for security and reliability, and a genuine passion for mentoring teammates and raising the engineering bar across the team.
+                Software Engineer II at Microsoft with deep expertise in cloud-based and distributed systems on Azure. Designs and ships production-quality C# and .NET solutions end-to-end — from requirements and architecture through deployment and operational health. Brings a "learn-it-all" mindset, a sharp eye for security and reliability, and a genuine passion for mentoring teammates and raising the engineering bar across the team. Approaches AI tooling with intentionality — using it to move faster on familiar problems and as a learning accelerator for new domains, while retaining full technical ownership of outcomes.
             </p>
 
             <h2 class="mt-5 mb-3">Professional Strengths</h2>
