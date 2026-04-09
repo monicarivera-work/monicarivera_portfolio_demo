@@ -52,7 +52,7 @@ namespace PortfolioDemo.Services.Resume
                         Bullets = new List<string>
                         {
                             "Designed AI-driven workflows with Copilot Agents for inventory management",
-                            "Integrates AI tooling to accelerate development workflows while maintaining full comprehension and ownership of generated outputs",
+                            "Integrated AI tooling to accelerate development workflows while maintaining full comprehension and ownership of generated outputs",
                             "Developed and maintained secure, high-performance C# web applications in Azure",
                             "Authored technical documentation and operational health reports",
                             "Implemented CI/CD pipelines and infrastructure-as-code for streamlined deployments",
