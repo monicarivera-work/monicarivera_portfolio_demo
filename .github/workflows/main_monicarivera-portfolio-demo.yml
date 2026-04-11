@@ -72,7 +72,9 @@ jobs:
     runs-on: windows-latest
     needs: build
     env:
-      RESUME_FILE_NAME: ${{ secrets.RESUME_FILE_NAME }}
+      AZURE_FILE_CONNECTION_STRING: ${{ secrets.AZURE_FILE_CONNECTION_STRING }}
+      FILE_SHARE_URL: ${{ secrets.FILE_SHARE_URL }}
+      RESUME_FILE_NAME: MonicaLeighRiveraResumeOfficial
       APPLICATIONINSIGHTS_CONNECTION_STRING: ${{ secrets.APPLICATIONINSIGHTS_CONNECTION_STRING }}
     if: github.event_name != 'pull_request'
     environment:
@@ -92,3 +94,10 @@ jobs:
           slot-name: 'Production'
           publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
           package: ./publish.zip
+          app-settings-json: |
+            [
+              {"name": "AZURE_FILE_CONNECTION_STRING", "value": "${{ secrets.AZURE_FILE_CONNECTION_STRING }}", "slotSetting": false},
+              {"name": "FILE_SHARE_URL", "value": "${{ secrets.FILE_SHARE_URL }}", "slotSetting": false},
+              {"name": "RESUME_FILE_NAME", "value": "MonicaLeighRiveraResumeOfficial", "slotSetting": false},
+              {"name": "APPLICATIONINSIGHTS_CONNECTION_STRING", "value": "${{ secrets.APPLICATIONINSIGHTS_CONNECTION_STRING }}", "slotSetting": false}
+            ]
