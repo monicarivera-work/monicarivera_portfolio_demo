@@ -8,7 +8,7 @@ namespace PortfolioDemo.Controllers
     [Route("[controller]")]
     public class FileController : Controller
     {
-        private readonly FileShareHelper _fileHelper;
+        private readonly FileShareHelper? _fileHelper;
         private readonly ILogger<FileController> _logger;
 
         public FileController(IConfiguration configuration, ILogger<FileController> logger)
@@ -19,7 +19,10 @@ namespace PortfolioDemo.Controllers
             {
                 _logger.LogError("Azure File Connection String is not configured.");
             }
-            _fileHelper = new FileShareHelper(connectionString);
+            else
+            {
+                _fileHelper = new FileShareHelper(connectionString);
+            }
         }
 
         private static readonly string[] AllowedExtensions = { ".pdf", ".docx", ".doc", ".txt" };
@@ -28,6 +31,12 @@ namespace PortfolioDemo.Controllers
         [EnableRateLimiting("FileDownloadRateLimit")]
         public async Task<IActionResult> Download(string fileName)
         {
+            if (_fileHelper == null)
+            {
+                _logger.LogError("File download requested but Azure File Connection String is not configured.");
+                return StatusCode(503, "File service is not available.");
+            }
+
             if (string.IsNullOrWhiteSpace(fileName))
                 return BadRequest("File name is required.");
 

@@ -9,6 +9,8 @@ namespace PortfolioDemo.Pages.Shared.Helpers
         
         public FileShareHelper(string connectionString)
         {
+            if (string.IsNullOrEmpty(connectionString))
+                throw new ArgumentException("Connection string must not be null or empty.", nameof(connectionString));
             _connectionString = connectionString;
         }
 
