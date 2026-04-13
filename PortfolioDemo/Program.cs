@@ -1,3 +1,4 @@
+using PortfolioDemo.Services;
 using System.Threading.RateLimiting;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -6,6 +7,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddRazorPages();
 builder.Services.AddControllers();
 builder.Services.AddHttpClient();
+builder.Services.AddSingleton<IUnansweredQuestionService, UnansweredQuestionService>();
 
 // Add Application Insights telemetry
 builder.Services.AddApplicationInsightsTelemetry();
