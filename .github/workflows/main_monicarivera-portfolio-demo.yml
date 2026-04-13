@@ -74,6 +74,7 @@ jobs:
     env:
       RESUME_FILE_NAME: ${{ secrets.RESUME_FILE_NAME }}
       APPLICATIONINSIGHTS_CONNECTION_STRING: ${{ secrets.APPLICATIONINSIGHTS_CONNECTION_STRING }}
+      AZURE_FILE_CONNECTION_STRING: ${{ secrets.AZURE_FILE_CONNECTION_STRING }}
     if: github.event_name != 'pull_request'
     environment:
       name: Production
