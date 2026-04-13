@@ -419,3 +419,6 @@ FodyWeavers.xsd
 
 # Runtime generated files
 nohup.out
+
+# AI chat - runtime data (not committed; populated at runtime)
+PortfolioDemo/Data/unanswered_questions.json
