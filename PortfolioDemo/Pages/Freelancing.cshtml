@@ -1,0 +1,156 @@
+@page
+@model FreelancingModel
+@{
+    ViewData["Title"] = "Freelancing";
+    ViewData["Description"] = "Freelance software development services for small businesses, including websites and custom web apps.";
+}
+
+<div class="container py-5 freelancing-page">
+    <div class="row g-4">
+        <div class="col-lg-10 mx-auto">
+            <div class="freelancing-hero p-4 p-md-5 mb-4">
+                <p class="text-uppercase fw-semibold mb-2 freelancing-eyebrow">Build Faster. Launch Smarter.</p>
+                <h1 class="mb-3">@ViewData["Title"] Services</h1>
+                <p class="lead mb-4">
+                    I help small businesses turn ideas into polished, secure, and reliable websites and web apps.
+                    With 5 years of enterprise cloud engineering experience, I deliver solutions that are practical,
+                    maintainable, and built to grow with your business.
+                </p>
+                <button type="button" class="btn btn-primary btn-lg" data-bs-toggle="modal" data-bs-target="#freelanceInquiryModal">
+                    Start Your Project
+                </button>
+            </div>
+
+            @if (Model.InquirySent == true)
+            {
+                <div class="alert alert-success" role="alert">
+                    Thank you for reaching out. I received your request and will follow up soon.
+                </div>
+            }
+            else if (Model.InquirySent == false)
+            {
+                <div class="alert alert-danger" role="alert">
+                    I couldn't send your request right now. Please try again shortly.
+                </div>
+            }
+
+            <div class="row g-4">
+                <div class="col-md-6">
+                    <div class="freelancing-card h-100">
+                        <h2 class="h4">What I Can Build</h2>
+                        <ul class="mb-0">
+                            <li>Business websites and landing pages</li>
+                            <li>Custom internal tools and dashboards</li>
+                            <li>Booking, intake, and workflow web apps</li>
+                            <li>API integrations and automation workflows</li>
+                            <li>Cloud-ready deployments on Azure</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="freelancing-card h-100">
+                        <h2 class="h4">Technology Stack</h2>
+                        <ul class="mb-0">
+                            <li>ASP.NET Core, C#, REST APIs</li>
+                            <li>HTML, CSS, JavaScript, Bootstrap</li>
+                            <li>Azure App Service, Key Vault, Monitoring</li>
+                            <li>Application Insights and production logging</li>
+                            <li>Secure coding and enterprise design patterns</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="freelancing-card h-100">
+                        <h2 class="h4">How I Work</h2>
+                        <ul class="mb-0">
+                            <li>Clear communication from kickoff to launch</li>
+                            <li>Simple milestones and transparent progress</li>
+                            <li>User-friendly design with clean implementation</li>
+                            <li>Reliable, tested, and maintainable solutions</li>
+                            <li>Professional delivery with startup speed</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="freelancing-card h-100">
+                        <h2 class="h4">Best Fit Clients</h2>
+                        <ul class="mb-0">
+                            <li>Small businesses modernizing manual workflows</li>
+                            <li>Teams needing a custom web solution quickly</li>
+                            <li>Founders validating a web app idea</li>
+                            <li>Businesses needing automation and integrations</li>
+                            <li>Owners wanting a long-term technical partner</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="freelanceInquiryModal" tabindex="-1" aria-labelledby="freelanceInquiryModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title h5 mb-0" id="freelanceInquiryModalLabel">Tell Me About Your Project</h2>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="post">
+                <div class="modal-body">
+                    <div asp-validation-summary="ModelOnly" class="text-danger mb-3" role="alert"></div>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label asp-for="Inquiry.Name" class="form-label"></label>
+                            <input asp-for="Inquiry.Name" class="form-control" autocomplete="name" />
+                            <span asp-validation-for="Inquiry.Name" class="text-danger"></span>
+                        </div>
+                        <div class="col-md-6">
+                            <label asp-for="Inquiry.Email" class="form-label"></label>
+                            <input asp-for="Inquiry.Email" class="form-control" autocomplete="email" />
+                            <span asp-validation-for="Inquiry.Email" class="text-danger"></span>
+                        </div>
+                        <div class="col-md-6">
+                            <label asp-for="Inquiry.Company" class="form-label"></label>
+                            <input asp-for="Inquiry.Company" class="form-control" autocomplete="organization" />
+                            <span asp-validation-for="Inquiry.Company" class="text-danger"></span>
+                        </div>
+                        <div class="col-md-6">
+                            <label asp-for="Inquiry.DesiredSolution" class="form-label"></label>
+                            <input asp-for="Inquiry.DesiredSolution" class="form-control" />
+                            <span asp-validation-for="Inquiry.DesiredSolution" class="text-danger"></span>
+                        </div>
+                        <div class="col-md-6">
+                            <label asp-for="Inquiry.Timeline" class="form-label"></label>
+                            <input asp-for="Inquiry.Timeline" class="form-control" />
+                            <span asp-validation-for="Inquiry.Timeline" class="text-danger"></span>
+                        </div>
+                        <div class="col-12">
+                            <label asp-for="Inquiry.ProjectSummary" class="form-label"></label>
+                            <textarea asp-for="Inquiry.ProjectSummary" class="form-control" rows="5"></textarea>
+                            <span asp-validation-for="Inquiry.ProjectSummary" class="text-danger"></span>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="submit" class="btn btn-primary">Send Request</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<partial name="_ValidationScriptsPartial" />
+
+@if (Model.InquirySent == false || !ViewContext.ModelState.IsValid)
+{
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            var modalElement = document.getElementById("freelanceInquiryModal");
+            if (modalElement) {
+                var modal = new bootstrap.Modal(modalElement);
+                modal.show();
+            }
+        });
+    </script>
+}

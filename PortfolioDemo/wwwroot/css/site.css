@@ -168,3 +168,50 @@ body {
   background: linear-gradient(135deg, #d4b5e8, #f5c9d4);
   color: var(--text-dark);
 }
+
+.freelancing-hero {
+  border-radius: 1rem;
+  background: linear-gradient(135deg, #efe8ff 0%, #ffeaf2 50%, #e8fff7 100%);
+  box-shadow: var(--shadow-card);
+}
+
+.freelancing-eyebrow {
+  letter-spacing: 0.08em;
+  color: #5a4bb6;
+}
+
+.freelancing-card {
+  background: #fff;
+  border: 1px solid #ece8ff;
+  border-radius: 0.9rem;
+  box-shadow: 0 6px 20px rgba(108, 92, 231, 0.08);
+  padding: 1.25rem;
+}
+
+.freelancing-card h2 {
+  color: #4f46a5;
+  margin-bottom: 0.85rem;
+}
+
+.freelancing-card ul {
+  margin-bottom: 0;
+  padding-left: 1.1rem;
+}
+
+.freelancing-card li {
+  margin-bottom: 0.4rem;
+}
+
+.freelancing-page .modal-content {
+  border: none;
+  border-radius: 0.9rem;
+  box-shadow: 0 14px 34px rgba(28, 34, 66, 0.24);
+}
+
+.freelancing-page .modal-header {
+  border-bottom: 1px solid #f0ebff;
+}
+
+.freelancing-page .modal-footer {
+  border-top: 1px solid #f0ebff;
+}
