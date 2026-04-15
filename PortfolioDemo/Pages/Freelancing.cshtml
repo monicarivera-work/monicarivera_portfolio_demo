@@ -30,7 +30,7 @@
             else if (Model.InquirySent == false)
             {
                 <div class="alert alert-danger" role="alert">
-                    I couldn't send your request right now. Please try again shortly.
+                    @(Model.InquiryErrorMessage ?? "I couldn't send your request right now. Please try again shortly.")
                 </div>
             }
 

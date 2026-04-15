@@ -15,6 +15,7 @@ namespace PortfolioDemo.Pages
         public FreelanceInquiryInput Inquiry { get; set; } = new();
 
         public bool? InquirySent { get; private set; }
+        public string? InquiryErrorMessage { get; private set; }
 
         public FreelancingModel(ILogger<FreelancingModel> logger, IConfiguration configuration)
         {
@@ -30,14 +31,14 @@ namespace PortfolioDemo.Pages
         public async Task<IActionResult> OnPostAsync()
         {
             _logger.LogInformation(
-                "Freelancing inquiry received. EmailDomain={EmailDomain}, SummaryLength={SummaryLength}",
-                GetEmailDomain(Inquiry.Email),
+                "Freelancing inquiry received. SummaryLength={SummaryLength}",
                 Inquiry.ProjectSummary?.Length ?? 0);
 
             if (!ModelState.IsValid)
             {
                 _logger.LogWarning("Freelancing inquiry rejected due to validation errors");
                 InquirySent = false;
+                InquiryErrorMessage = "Please fix the highlighted fields and try again.";
                 return Page();
             }
 
@@ -46,6 +47,7 @@ namespace PortfolioDemo.Pages
             {
                 _logger.LogWarning("EMAIL_ADDRESS is not configured. Cannot send freelancing inquiry.");
                 InquirySent = false;
+                InquiryErrorMessage = "Inquiry delivery is temporarily unavailable. Please try again shortly.";
                 return Page();
             }
 
@@ -62,6 +64,7 @@ namespace PortfolioDemo.Pages
                 {
                     _logger.LogWarning("SMTP settings are not fully configured for freelancing inquiry.");
                     InquirySent = false;
+                    InquiryErrorMessage = "Inquiry delivery is temporarily unavailable. Please try again shortly.";
                     return Page();
                 }
 
@@ -101,11 +104,13 @@ namespace PortfolioDemo.Pages
                 _logger.LogInformation("Freelancing inquiry email sent successfully");
                 Inquiry = new FreelanceInquiryInput();
                 InquirySent = true;
+                InquiryErrorMessage = null;
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Failed to send freelancing inquiry email.");
                 InquirySent = false;
+                InquiryErrorMessage = "I couldn't send your request right now. Please try again shortly.";
             }
 
             return Page();
@@ -114,15 +119,6 @@ namespace PortfolioDemo.Pages
         private static string SanitizeSingleLine(string? value) =>
             value?.Replace("\r", string.Empty).Replace("\n", " ").Trim() ?? string.Empty;
 
-        private static string GetEmailDomain(string? email)
-        {
-            if (string.IsNullOrWhiteSpace(email) || !email.Contains('@'))
-            {
-                return "unknown";
-            }
-
-            return email.Split('@', 2)[1];
-        }
     }
 
     public class FreelanceInquiryInput
