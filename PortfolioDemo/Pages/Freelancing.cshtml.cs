@@ -42,7 +42,7 @@ namespace PortfolioDemo.Pages
                 return Page();
             }
 
-            var toAddress = _configuration[Constants.EmailAddressKey];
+            var toAddress = _configuration["EMAIL_ADDRESS"];
             if (string.IsNullOrWhiteSpace(toAddress))
             {
                 _logger.LogWarning("EMAIL_ADDRESS is not configured. Cannot send freelancing inquiry.");
@@ -102,7 +102,7 @@ namespace PortfolioDemo.Pages
                 _logger.LogInformation("Attempting to send freelancing inquiry email");
                 await smtpClient.SendMailAsync(mailMessage);
                 _logger.LogInformation("Freelancing inquiry email sent successfully");
-                Inquiry = new FreelanceInquiryInput();
+                ModelState.Clear();
                 InquirySent = true;
                 InquiryErrorMessage = null;
             }
