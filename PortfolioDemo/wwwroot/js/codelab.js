@@ -38,6 +38,8 @@
     let currentStep = 0;
     let playTimer = null;
     const PLAY_INTERVAL_MS = 1200;
+    const MAX_LINKED_LIST_NODES = 50;
+    const MAX_OBJECT_ENTRIES = 20;
 
     // ── Example programs ─────────────────────────────────────────────────────
     const EXAMPLES = [
@@ -371,7 +373,7 @@ isBalanced("({[]})");`,
     function buildLinkedListEl(head) {
         const wrap = el('div', 'cl-ll-viz');
         let cur = head;
-        let limit = 50;
+        let limit = MAX_LINKED_LIST_NODES;
         while (cur && limit-- > 0) {
             const node = el('div', 'cl-ll-node');
             const box = el('div', 'cl-ll-box');
@@ -465,7 +467,7 @@ isBalanced("({[]})");`,
             wrap.appendChild(e);
             return wrap;
         }
-        const MAX = 20;
+        const MAX = MAX_OBJECT_ENTRIES;
         entries.slice(0, MAX).forEach(([k, v]) => {
             const row = el('div', 'cl-obj-row');
             const key = el('span', 'cl-obj-key'); key.textContent = k;

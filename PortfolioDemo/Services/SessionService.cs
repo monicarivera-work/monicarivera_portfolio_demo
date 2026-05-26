@@ -16,8 +16,9 @@ namespace PortfolioDemo.Services
     public class SessionService : ISessionService
     {
         private const string TableName = "CodeLabSessions";
-        private readonly TableClient _tableClient;
+        private readonly TableClient? _tableClient;
         private readonly ILogger<SessionService> _logger;
+        private bool _isConfigured => _tableClient != null;
 
         public SessionService(IConfiguration configuration, ILogger<SessionService> logger)
         {
@@ -25,9 +26,8 @@ namespace PortfolioDemo.Services
             var connectionString = configuration[Constants.AzureStorageConnectionStringKey];
             if (string.IsNullOrWhiteSpace(connectionString))
             {
-                _logger.LogWarning("Azure Storage connection string not configured; sessions will not persist.");
-                _tableClient = new TableClient(new Uri("https://localhost"), TableName,
-                    new TableSharedKeyCredential("devaccount", Convert.ToBase64String(new byte[64])));
+                _logger.LogWarning("Azure Storage connection string not configured; session persistence is disabled.");
+                _tableClient = null;
                 return;
             }
 
@@ -37,10 +37,11 @@ namespace PortfolioDemo.Services
 
         public async Task<List<CodeSessionDto>> GetSessionsAsync(string userOid)
         {
+            if (!_isConfigured) return new List<CodeSessionDto>();
             try
             {
                 var sessions = new List<CodeSessionDto>();
-                await foreach (var entity in _tableClient.QueryAsync<CodeSessionEntity>(
+                await foreach (var entity in _tableClient!.QueryAsync<CodeSessionEntity>(
                     e => e.PartitionKey == userOid))
                 {
                     sessions.Add(MapToDto(entity));
@@ -56,10 +57,11 @@ namespace PortfolioDemo.Services
 
         public async Task<CodeSessionDto?> GetSessionAsync(string userOid, string sessionName)
         {
+            if (!_isConfigured) return null;
             try
             {
                 var rowKey = EncodeKey(sessionName);
-                var response = await _tableClient.GetEntityAsync<CodeSessionEntity>(userOid, rowKey);
+                var response = await _tableClient!.GetEntityAsync<CodeSessionEntity>(userOid, rowKey);
                 return MapToDto(response.Value);
             }
             catch (RequestFailedException ex) when (ex.Status == 404)
@@ -68,20 +70,22 @@ namespace PortfolioDemo.Services
             }
             catch (Exception ex)
             {
-                _logger.LogWarning(ex, "Failed to retrieve session {Name} for user {OID}", sessionName, userOid);
+                _logger.LogWarning(ex, "Failed to retrieve session for user {OID} (name length: {NameLen})",
+                    userOid, sessionName?.Length ?? 0);
                 return null;
             }
         }
 
         public async Task SaveSessionAsync(string userOid, SaveSessionRequest request)
         {
+            if (!_isConfigured) return;
             var rowKey = EncodeKey(request.SessionName);
             var now = DateTimeOffset.UtcNow;
 
             CodeSessionEntity entity;
             try
             {
-                var existing = await _tableClient.GetEntityAsync<CodeSessionEntity>(userOid, rowKey);
+                var existing = await _tableClient!.GetEntityAsync<CodeSessionEntity>(userOid, rowKey);
                 entity = existing.Value;
                 entity.Code = request.Code;
                 entity.Language = request.Language;
@@ -102,16 +106,17 @@ namespace PortfolioDemo.Services
                     CreatedAt = now,
                     UpdatedAt = now
                 };
-                await _tableClient.AddEntityAsync(entity);
+                await _tableClient!.AddEntityAsync(entity);
             }
         }
 
         public async Task DeleteSessionAsync(string userOid, string sessionName)
         {
+            if (!_isConfigured) return;
             try
             {
                 var rowKey = EncodeKey(sessionName);
-                await _tableClient.DeleteEntityAsync(userOid, rowKey);
+                await _tableClient!.DeleteEntityAsync(userOid, rowKey);
             }
             catch (RequestFailedException ex) when (ex.Status == 404)
             {
@@ -119,7 +124,8 @@ namespace PortfolioDemo.Services
             }
             catch (Exception ex)
             {
-                _logger.LogWarning(ex, "Failed to delete session {Name} for user {OID}", sessionName, userOid);
+                _logger.LogWarning(ex, "Failed to delete session for user {OID} (name length: {NameLen})",
+                    userOid, sessionName?.Length ?? 0);
             }
         }
 
