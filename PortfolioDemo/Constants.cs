@@ -7,5 +7,7 @@
         public const string ResumeFileNameKey = "RESUME_FILE_NAME";
         public const string AnthropicApiKeyName = "ANTHROPIC_API_KEY";
         public const string EmailAddressKey = "EMAIL_ADDRESS";
+        public const string AzureStorageConnectionStringKey = "AZURE_STORAGE_CONNECTION_STRING";
+        public const string LeetCodeUsername = "NickyRivers6543";
     }
 }

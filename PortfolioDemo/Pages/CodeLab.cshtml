@@ -1,0 +1,357 @@
+@page
+@model CodeLabModel
+@{
+    ViewData["Title"] = "Code Lab";
+    ViewData["Description"] = "Interactive coding environment with step-by-step stack trace visualization. Visualize arrays, linked lists, trees, and more.";
+}
+
+<style>
+    /* ── Layout ── */
+    .cl-hero { text-align: center; padding: 2.5rem 1rem 1.5rem; }
+    .cl-hero h1 { font-size: 2.6rem; margin-bottom: 0.4rem; }
+    .cl-hero p { color: var(--text-light); font-size: 1.05rem; max-width: 680px; margin: 0 auto 0.5rem; }
+
+    .cl-layout {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1.2rem;
+        margin-bottom: 1.5rem;
+    }
+    @@media (max-width: 900px) { .cl-layout { grid-template-columns: 1fr; } }
+
+    /* ── Panel cards ── */
+    .cl-panel {
+        background: rgba(255,255,255,0.7);
+        backdrop-filter: blur(12px);
+        border: 1.5px solid rgba(212,181,232,0.4);
+        border-radius: 20px;
+        padding: 1.2rem;
+        box-shadow: 0 6px 24px rgba(212,181,232,0.18);
+    }
+    .cl-panel-title {
+        font-family: 'Playfair Display', serif;
+        font-size: 1.05rem; font-weight: 700;
+        color: var(--text-dark); margin-bottom: 0.8rem;
+        display: flex; align-items: center; gap: 0.4rem;
+    }
+
+    /* ── Code editor ── */
+    #cl-editor {
+        width: 100%; min-height: 320px;
+        font-family: 'Courier New', monospace; font-size: 0.88rem;
+        line-height: 1.6; padding: 0.9rem; resize: vertical;
+        background: rgba(30,25,50,0.93); color: #e8dff5;
+        border: 1.5px solid rgba(212,181,232,0.3); border-radius: 12px;
+        outline: none; tab-size: 2;
+    }
+    #cl-editor:focus { border-color: rgba(212,181,232,0.7); box-shadow: 0 0 0 3px rgba(212,181,232,0.15); }
+
+    /* ── Toolbar ── */
+    .cl-toolbar { display: flex; gap: 0.6rem; flex-wrap: wrap; margin-top: 0.8rem; align-items: center; }
+    .cl-btn {
+        display: inline-flex; align-items: center; gap: 0.35rem;
+        padding: 7px 16px; border-radius: 50px; font-size: 0.88rem;
+        font-weight: 600; border: none; cursor: pointer; transition: all 0.2s;
+    }
+    .cl-btn-run {
+        background: linear-gradient(135deg, #c8e6c9, #81c784);
+        color: #2d5a2d;
+    }
+    .cl-btn-run:hover { opacity: 0.88; transform: translateY(-1px); }
+    .cl-btn-clear {
+        background: rgba(212,181,232,0.35); color: var(--text-dark);
+        border: 1px solid rgba(212,181,232,0.4);
+    }
+    .cl-btn-clear:hover { background: rgba(212,181,232,0.55); }
+    .cl-btn-example {
+        background: rgba(179,229,252,0.45); color: #1a6080;
+        border: 1px solid rgba(179,229,252,0.6);
+    }
+    .cl-btn-example:hover { background: rgba(179,229,252,0.7); }
+    .cl-lang-select {
+        padding: 6px 10px; border-radius: 50px; font-size: 0.85rem;
+        border: 1.5px solid rgba(212,181,232,0.4); background: rgba(255,255,255,0.6);
+        color: var(--text-dark); cursor: pointer;
+    }
+
+    /* ── Visualization panel ── */
+    #cl-viz-area {
+        min-height: 320px; max-height: 500px; overflow-y: auto;
+        background: rgba(250,247,255,0.8);
+        border-radius: 12px; padding: 0.8rem;
+    }
+    .cl-empty-state {
+        display: flex; flex-direction: column; align-items: center;
+        justify-content: center; height: 280px; color: var(--text-light);
+        text-align: center;
+    }
+    .cl-empty-state .cl-empty-icon { font-size: 3rem; margin-bottom: 0.5rem; opacity: 0.5; }
+
+    /* ── Step navigator ── */
+    .cl-step-nav {
+        display: flex; align-items: center; gap: 0.5rem;
+        margin-bottom: 0.8rem; flex-wrap: wrap;
+    }
+    .cl-step-btn {
+        padding: 5px 12px; border-radius: 50px; font-size: 0.8rem;
+        border: 1.5px solid rgba(212,181,232,0.5); background: rgba(255,255,255,0.6);
+        color: var(--text-dark); cursor: pointer; transition: all 0.15s;
+    }
+    .cl-step-btn:hover:not(:disabled) { background: rgba(212,181,232,0.35); }
+    .cl-step-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+    .cl-step-label {
+        font-size: 0.85rem; color: var(--text-light); flex: 1; text-align: center;
+    }
+    .cl-play-btn {
+        background: linear-gradient(135deg, #d4b5e8, #f5c9d4);
+        color: #5a5a6e; border: none;
+    }
+    .cl-play-btn:hover { opacity: 0.85; }
+
+    /* ── Snapshot card ── */
+    .cl-snapshot {
+        background: rgba(255,255,255,0.85); border-radius: 14px;
+        padding: 1rem; border: 1.5px solid rgba(212,181,232,0.3);
+        animation: snapIn 0.2s ease;
+    }
+    @@keyframes snapIn { from { opacity:0; transform:translateY(4px); } to { opacity:1; transform:none; } }
+    .cl-snap-label {
+        font-family: 'Playfair Display', serif;
+        font-size: 1rem; font-weight: 700; color: #7b5ea7;
+        margin-bottom: 0.8rem; display: flex; align-items: center; gap: 0.4rem;
+    }
+    .cl-snap-vars { display: flex; flex-wrap: wrap; gap: 0.8rem; }
+
+    /* ── Variable displays ── */
+    .cl-var-group { min-width: 120px; }
+    .cl-var-name { font-size: 0.75rem; color: var(--text-light); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.3rem; }
+    .cl-var-scalar {
+        display: inline-block; background: rgba(212,181,232,0.25);
+        border: 1.5px solid rgba(212,181,232,0.5); border-radius: 8px;
+        padding: 4px 12px; font-family: 'Courier New', monospace; font-size: 0.88rem;
+        color: #5a5a6e; min-width: 40px; text-align: center;
+    }
+    .cl-var-null { color: #aaa; font-style: italic; }
+
+    /* ── Array visualization ── */
+    .cl-array-viz { display: flex; flex-wrap: wrap; gap: 3px; align-items: flex-end; }
+    .cl-array-cell {
+        display: flex; flex-direction: column; align-items: center; gap: 1px;
+    }
+    .cl-array-box {
+        min-width: 36px; height: 36px; display: flex; align-items: center; justify-content: center;
+        background: rgba(179,229,252,0.5); border: 2px solid rgba(100,180,230,0.7);
+        border-radius: 6px; font-family: 'Courier New', monospace; font-size: 0.82rem;
+        color: #1a5070; font-weight: 600; padding: 0 4px;
+        transition: background 0.3s;
+    }
+    .cl-array-box.highlight { background: rgba(212,181,232,0.6); border-color: #7b5ea7; color: #5a5a6e; }
+    .cl-array-idx { font-size: 0.65rem; color: var(--text-light); }
+
+    /* ── Stack/Queue ── */
+    .cl-stack-viz { display: flex; flex-direction: column-reverse; gap: 3px; max-width: 180px; }
+    .cl-stack-box {
+        padding: 6px 14px; border-radius: 6px; text-align: center;
+        background: rgba(200,230,201,0.5); border: 2px solid rgba(90,170,90,0.5);
+        font-family: 'Courier New', monospace; font-size: 0.82rem; color: #2d5a2d;
+        transition: all 0.3s;
+    }
+    .cl-stack-box.top { background: rgba(200,230,201,0.85); border-color: #5cb85c; font-weight: 700; }
+
+    /* ── Linked list ── */
+    .cl-ll-viz { display: flex; align-items: center; flex-wrap: wrap; gap: 2px; }
+    .cl-ll-node {
+        display: flex; align-items: center;
+    }
+    .cl-ll-box {
+        min-width: 44px; height: 36px; display: flex; align-items: center; justify-content: center;
+        background: rgba(255,224,178,0.6); border: 2px solid rgba(240,140,50,0.6);
+        border-radius: 6px; font-family: 'Courier New', monospace; font-size: 0.82rem;
+        color: #7a4400; font-weight: 600; padding: 0 4px;
+    }
+    .cl-ll-arrow { font-size: 1.1rem; color: rgba(240,140,50,0.7); margin: 0 2px; }
+    .cl-ll-null { font-size: 0.75rem; color: var(--text-light); font-style: italic; margin-left: 3px; }
+
+    /* ── Binary tree ── */
+    .cl-tree-viz { overflow-x: auto; }
+    .cl-tree-svg { display: block; }
+
+    /* ── Object / Map ── */
+    .cl-obj-viz { display: flex; flex-direction: column; gap: 3px; }
+    .cl-obj-row { display: flex; gap: 0.4rem; align-items: center; }
+    .cl-obj-key {
+        background: rgba(212,181,232,0.3); border-radius: 4px;
+        padding: 2px 8px; font-family: 'Courier New', monospace; font-size: 0.78rem;
+        color: #7b5ea7; min-width: 60px; text-align: center;
+    }
+    .cl-obj-colon { color: var(--text-light); }
+    .cl-obj-val {
+        background: rgba(179,229,252,0.4); border-radius: 4px;
+        padding: 2px 8px; font-family: 'Courier New', monospace; font-size: 0.78rem;
+        color: #1a5070;
+    }
+
+    /* ── Console output ── */
+    .cl-console {
+        background: rgba(20,15,35,0.9); color: #c8e6c9;
+        border-radius: 12px; padding: 0.8rem; font-family: 'Courier New', monospace;
+        font-size: 0.82rem; line-height: 1.6; max-height: 160px; overflow-y: auto;
+        min-height: 60px; margin-top: 0.8rem;
+        border: 1.5px solid rgba(212,181,232,0.2);
+    }
+    .cl-console .cl-console-err { color: #ef9a9a; }
+
+    /* ── Session panel ── */
+    .cl-session-panel {
+        background: rgba(255,255,255,0.7);
+        backdrop-filter: blur(12px);
+        border: 1.5px solid rgba(212,181,232,0.4);
+        border-radius: 20px; padding: 1.2rem;
+        box-shadow: 0 6px 24px rgba(212,181,232,0.15);
+        margin-bottom: 1.5rem;
+    }
+    .cl-session-header { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 1rem; }
+    .cl-session-header h3 { margin: 0; font-size: 1.1rem; }
+    .cl-login-hint { font-size: 0.85rem; color: var(--text-light); }
+    .cl-login-hint a { color: #7b5ea7; text-decoration: none; font-weight: 600; }
+    .cl-login-hint a:hover { text-decoration: underline; }
+    .cl-session-row { display: flex; gap: 0.6rem; flex-wrap: wrap; align-items: center; margin-bottom: 0.8rem; }
+    .cl-session-input {
+        flex: 1; min-width: 160px; padding: 7px 14px; border-radius: 50px;
+        border: 1.5px solid rgba(212,181,232,0.5); background: rgba(255,255,255,0.7);
+        font-size: 0.88rem; color: var(--text-dark); outline: none;
+    }
+    .cl-session-input:focus { border-color: rgba(212,181,232,0.9); box-shadow: 0 0 0 3px rgba(212,181,232,0.12); }
+    .cl-btn-save {
+        background: linear-gradient(135deg, #d4b5e8, #f5c9d4);
+        color: #5a5a6e; border: none;
+    }
+    .cl-btn-save:hover { opacity: 0.85; }
+    .cl-sessions-list { display: flex; flex-direction: column; gap: 0.4rem; }
+    .cl-session-item {
+        display: flex; align-items: center; gap: 0.5rem;
+        background: rgba(255,255,255,0.6); border-radius: 10px;
+        padding: 0.5rem 0.9rem; border: 1px solid rgba(212,181,232,0.3);
+        flex-wrap: wrap;
+    }
+    .cl-session-item-name { flex: 1; font-weight: 600; font-size: 0.9rem; color: var(--text-dark); }
+    .cl-session-item-date { font-size: 0.78rem; color: var(--text-light); }
+    .cl-btn-load { padding: 4px 12px; font-size: 0.8rem; border-radius: 50px; background: rgba(179,229,252,0.5); border: 1px solid rgba(100,180,230,0.5); color: #1a5070; cursor: pointer; }
+    .cl-btn-load:hover { background: rgba(179,229,252,0.8); }
+    .cl-btn-del { padding: 4px 10px; font-size: 0.8rem; border-radius: 50px; background: rgba(239,154,154,0.3); border: 1px solid rgba(217,83,79,0.3); color: #c0392b; cursor: pointer; }
+    .cl-btn-del:hover { background: rgba(239,154,154,0.6); }
+    .cl-user-info { display: flex; align-items: center; gap: 0.6rem; font-size: 0.9rem; }
+    .cl-user-name { font-weight: 600; color: #7b5ea7; }
+    .cl-logout-link { font-size: 0.8rem; color: var(--text-light); text-decoration: none; }
+    .cl-logout-link:hover { color: #d9534f; }
+
+    /* ── How-to hint box ── */
+    .cl-howto {
+        background: rgba(179,229,252,0.25); border-left: 4px solid rgba(100,180,230,0.6);
+        border-radius: 0 10px 10px 0; padding: 0.8rem 1rem; margin-bottom: 1rem;
+        font-size: 0.85rem; color: var(--text-dark);
+    }
+    .cl-howto code {
+        background: rgba(100,180,230,0.2); padding: 1px 5px; border-radius: 4px;
+        font-family: 'Courier New', monospace;
+    }
+</style>
+
+<div class="cl-hero">
+    <h1>🔬 Code Lab</h1>
+    <p>Write JavaScript, run it, and watch your variables and data structures come to life — step by step.</p>
+</div>
+
+<div class="container pb-5">
+
+    <!-- Session panel -->
+    <div class="cl-session-panel">
+        <div class="cl-session-header">
+            <h3>💾 Sessions</h3>
+            @if (Model.IsAuthenticated)
+            {
+                <div class="cl-user-info">
+                    <span>Signed in as <span class="cl-user-name">@Model.UserDisplayName</span></span>
+                    <a href="/signout" class="cl-logout-link">Sign out</a>
+                </div>
+            }
+            else
+            {
+                <span class="cl-login-hint"><a href="/signin">Sign in with Microsoft</a> to save and load sessions.</span>
+            }
+        </div>
+
+        @if (Model.IsAuthenticated)
+        {
+            <div class="cl-session-row">
+                <input type="text" id="cl-session-name" class="cl-session-input" placeholder="Session name (e.g. Two Sum BFS)…" maxlength="100" />
+                <button class="cl-btn cl-btn-save" id="cl-btn-save"><i class="fas fa-save"></i> Save</button>
+            </div>
+            <div class="cl-sessions-list" id="cl-sessions-list">
+                <p class="text-muted" style="font-size:0.85rem;">Loading saved sessions…</p>
+            </div>
+        }
+    </div>
+
+    <!-- How-to hint -->
+    <div class="cl-howto">
+        <strong>How to use:</strong> Write JavaScript in the editor. Use <code>trace("label", { var1, var2, ... })</code> to capture
+        state snapshots, then click <strong>▶ Run</strong>. Step through each snapshot to see how your variables and
+        data structures evolve. Supports: scalars, arrays, stacks/queues (arrays), linked lists
+        (<code>{val, next}</code>), binary trees (<code>{val, left, right}</code>), and plain objects.
+    </div>
+
+    <!-- Main layout: editor + visualizer -->
+    <div class="cl-layout">
+
+        <!-- Editor panel -->
+        <div class="cl-panel">
+            <div class="cl-panel-title">✏️ Code Editor</div>
+            <textarea id="cl-editor" spellcheck="false" autocorrect="off" autocapitalize="off"></textarea>
+            <div class="cl-toolbar">
+                <button class="cl-btn cl-btn-run" id="cl-run-btn"><i class="fas fa-play"></i> Run</button>
+                <button class="cl-btn cl-btn-clear" id="cl-clear-btn"><i class="fas fa-trash"></i> Clear</button>
+                <button class="cl-btn cl-btn-example" id="cl-example-btn"><i class="fas fa-lightbulb"></i> Load Example</button>
+            </div>
+            <div class="cl-console" id="cl-console"><span style="opacity:0.4">// Console output appears here…</span></div>
+        </div>
+
+        <!-- Visualization panel -->
+        <div class="cl-panel">
+            <div class="cl-panel-title">📊 Stack Trace Visualizer</div>
+            <div id="cl-viz-area">
+                <div class="cl-empty-state" id="cl-viz-empty">
+                    <div class="cl-empty-icon">🔭</div>
+                    <p>Run your code to see variable states visualized here.</p>
+                    <p style="font-size:0.8rem;">Add <code style="background:rgba(0,0,0,0.06);padding:1px 5px;border-radius:4px;">trace("label", {vars})</code> calls.</p>
+                </div>
+                <div id="cl-viz-steps" style="display:none;">
+                    <div class="cl-step-nav">
+                        <button class="cl-step-btn" id="cl-step-first" title="First step">⏮</button>
+                        <button class="cl-step-btn" id="cl-step-prev" title="Previous step">◀</button>
+                        <button class="cl-step-btn cl-play-btn" id="cl-step-play" title="Play/Pause">▶</button>
+                        <button class="cl-step-btn" id="cl-step-next" title="Next step">▶</button>
+                        <button class="cl-step-btn" id="cl-step-last" title="Last step">⏭</button>
+                        <span class="cl-step-label" id="cl-step-label">Step 1 / 1</span>
+                    </div>
+                    <div id="cl-snapshot-display"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Hidden iframe sandbox for code execution -->
+    <iframe id="cl-sandbox"
+            sandbox="allow-scripts"
+            style="display:none;"
+            title="Code execution sandbox"></iframe>
+
+</div>
+
+@section Scripts {
+<script src="~/js/codelab.js"></script>
+<script>
+    // Pass auth state to JS
+    window.clIsAuthenticated = @(Model.IsAuthenticated ? "true" : "false");
+</script>
+}
