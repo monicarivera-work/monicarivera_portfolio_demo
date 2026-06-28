@@ -1,0 +1,1037 @@
+@page
+@model StudyModel
+@{
+    ViewData["Title"] = "Study";
+    ViewData["Description"] = "A modular, interactive study hub. First chapter: Dynamic Programming — what it is, how it works, 10 worked examples from easiest to hardest, plus 5 edge cases.";
+}
+
+<style>
+    /* ════════════════════════════════════════════════
+       Study Hub — modular, section-based learning layout
+       Page-scoped styles (flowery theme + dark mode aware)
+    ═══════════════════════════════════════════════════ */
+    .study-page {
+        --study-card: rgba(255, 255, 255, 0.65);
+        --study-border: rgba(212, 181, 232, 0.45);
+        --study-border-strong: rgba(212, 181, 232, 0.85);
+        --study-text: #5a5a6e;
+        --study-muted: #8a8a9e;
+        --study-code-bg: #2c2440;
+        --study-code-text: #f3ecff;
+        font-family: 'Lato', sans-serif;
+        padding-bottom: 3rem;
+    }
+
+    body.dark-mode .study-page {
+        --study-card: rgba(36, 28, 56, 0.6);
+        --study-border: rgba(170, 140, 210, 0.35);
+        --study-border-strong: rgba(190, 160, 230, 0.7);
+        --study-text: #e8def5;
+        --study-muted: #b8a8d0;
+        --study-code-bg: #15102a;
+        --study-code-text: #ece3ff;
+    }
+
+    /* ── Hero ── */
+    .study-hero {
+        text-align: center;
+        padding: 3rem 1rem 1.5rem;
+    }
+
+    .study-hero h1 {
+        font-family: 'Playfair Display', serif;
+        font-size: 2.6rem;
+        margin-bottom: 0.6rem;
+    }
+
+    .study-hero p {
+        color: var(--study-muted);
+        max-width: 720px;
+        margin: 0 auto;
+        font-size: 1.05rem;
+    }
+
+    /* ── Shell: chapter rail + chapter body ── */
+    .study-shell {
+        max-width: 1180px;
+        margin: 0 auto;
+        padding: 0 1rem;
+        display: grid;
+        grid-template-columns: 260px 1fr;
+        gap: 1.5rem;
+        align-items: start;
+    }
+
+    /* ── Chapter rail (left) ── */
+    .chapter-rail {
+        position: sticky;
+        top: 90px;
+        background: var(--study-card);
+        border: 1px solid var(--study-border);
+        border-radius: 18px;
+        padding: 1rem;
+        backdrop-filter: blur(6px);
+    }
+
+    .chapter-rail h2 {
+        font-size: 0.78rem;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: var(--study-muted);
+        margin: 0.25rem 0 0.75rem 0.4rem;
+    }
+
+    .chapter-btn {
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+        width: 100%;
+        text-align: left;
+        background: transparent;
+        border: 1px solid transparent;
+        border-radius: 12px;
+        padding: 0.7rem 0.8rem;
+        margin-bottom: 0.35rem;
+        font-weight: 600;
+        color: var(--study-text);
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+
+    .chapter-btn .chap-emoji { font-size: 1.2rem; }
+
+    .chapter-btn:hover:not(:disabled) {
+        background: linear-gradient(135deg, rgba(212, 181, 232, 0.35), rgba(245, 201, 212, 0.35));
+        transform: translateX(2px);
+    }
+
+    .chapter-btn.active {
+        background: linear-gradient(135deg, rgba(212, 181, 232, 0.6), rgba(245, 201, 212, 0.55));
+        border-color: var(--study-border-strong);
+        box-shadow: 0 4px 14px rgba(212, 181, 232, 0.3);
+    }
+
+    .chapter-btn:disabled {
+        opacity: 0.55;
+        cursor: not-allowed;
+    }
+
+    .chapter-btn small {
+        display: block;
+        font-weight: 400;
+        font-size: 0.72rem;
+        color: var(--study-muted);
+    }
+
+    /* ── Chapter body (right) ── */
+    .chapter-body {
+        background: var(--study-card);
+        border: 1px solid var(--study-border);
+        border-radius: 18px;
+        padding: 1.5rem 1.75rem 2rem;
+        backdrop-filter: blur(6px);
+        min-height: 60vh;
+    }
+
+    .section-tabs {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        border-bottom: 1px solid var(--study-border);
+        padding-bottom: 1rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .section-tab {
+        background: transparent;
+        border: 1px solid var(--study-border);
+        border-radius: 50px;
+        padding: 0.4rem 1rem;
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: var(--study-text);
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+
+    .section-tab:hover,
+    .section-tab.active {
+        background: linear-gradient(135deg, rgba(212, 181, 232, 0.55), rgba(245, 201, 212, 0.5));
+        border-color: var(--study-border-strong);
+        transform: translateY(-1px);
+    }
+
+    .study-section { display: none; animation: studyFade 0.35s ease; }
+    .study-section.active { display: block; }
+
+    @@keyframes studyFade {
+        from { opacity: 0; transform: translateY(8px); }
+        to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .study-section h3 {
+        font-family: 'Playfair Display', serif;
+        color: var(--study-text);
+        margin-bottom: 0.75rem;
+    }
+
+    .study-section p,
+    .study-section li { color: var(--study-text); line-height: 1.7; }
+
+    .lead-note {
+        background: linear-gradient(135deg, rgba(212, 181, 232, 0.18), rgba(179, 229, 252, 0.18));
+        border-left: 4px solid var(--study-border-strong);
+        border-radius: 0 12px 12px 0;
+        padding: 0.9rem 1.1rem;
+        margin: 1rem 0 1.5rem;
+    }
+
+    /* concept grid */
+    .concept-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 1rem;
+        margin: 1.25rem 0;
+    }
+
+    .concept-card {
+        background: rgba(255, 255, 255, 0.5);
+        border: 1px solid var(--study-border);
+        border-radius: 14px;
+        padding: 1rem 1.1rem;
+    }
+
+    body.dark-mode .concept-card { background: rgba(255, 255, 255, 0.06); }
+
+    .concept-card h4 {
+        font-size: 1rem;
+        margin-bottom: 0.4rem;
+        color: var(--study-text);
+    }
+
+    .concept-card p { font-size: 0.9rem; margin: 0; color: var(--study-muted); }
+
+    .step-list { counter-reset: step; list-style: none; padding-left: 0; }
+    .step-list li {
+        position: relative;
+        padding: 0.5rem 0 0.5rem 2.6rem;
+        margin-bottom: 0.4rem;
+    }
+    .step-list li::before {
+        counter-increment: step;
+        content: counter(step);
+        position: absolute;
+        left: 0;
+        top: 0.45rem;
+        width: 1.9rem;
+        height: 1.9rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 50%;
+        font-weight: 700;
+        font-size: 0.85rem;
+        color: #4a3060;
+        background: linear-gradient(135deg, #d4b5e8, #f5c9d4);
+    }
+
+    /* ── Examples: list + template panel ── */
+    .example-layout {
+        display: grid;
+        grid-template-columns: 290px 1fr;
+        gap: 1.25rem;
+        align-items: start;
+    }
+
+    .example-list { list-style: none; padding: 0; margin: 0; }
+
+    .example-list li { margin-bottom: 0.5rem; }
+
+    .example-link {
+        display: flex;
+        align-items: center;
+        gap: 0.7rem;
+        width: 100%;
+        text-align: left;
+        background: rgba(255, 255, 255, 0.5);
+        border: 1px solid var(--study-border);
+        border-radius: 12px;
+        padding: 0.6rem 0.75rem;
+        cursor: pointer;
+        transition: all 0.18s ease;
+        color: var(--study-text);
+    }
+
+    body.dark-mode .example-link { background: rgba(255, 255, 255, 0.05); }
+
+    .example-link:hover { transform: translateX(2px); border-color: var(--study-border-strong); }
+
+    .example-link.active {
+        background: linear-gradient(135deg, rgba(212, 181, 232, 0.5), rgba(245, 201, 212, 0.45));
+        border-color: var(--study-border-strong);
+        box-shadow: 0 4px 14px rgba(212, 181, 232, 0.25);
+    }
+
+    .ex-index {
+        flex: 0 0 auto;
+        width: 2rem;
+        height: 2rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 50%;
+        font-weight: 700;
+        font-size: 0.85rem;
+        background: linear-gradient(135deg, #d4b5e8, #f5c9d4);
+        color: #4a3060;
+    }
+
+    .ex-meta { display: flex; flex-direction: column; line-height: 1.2; }
+    .ex-meta strong { font-size: 0.92rem; }
+    .ex-meta small { color: var(--study-muted); font-size: 0.72rem; }
+
+    /* difficulty meter dots */
+    .diff {
+        display: inline-flex;
+        gap: 3px;
+        vertical-align: middle;
+        margin-left: 0.4rem;
+    }
+    .diff i {
+        width: 7px; height: 7px; border-radius: 50%;
+        background: rgba(212, 181, 232, 0.35);
+        display: inline-block;
+    }
+    .diff i.on { background: linear-gradient(135deg, #d4b5e8, #f5c9d4); }
+
+    /* ── The shared example template panel ── */
+    .example-panel {
+        background: rgba(255, 255, 255, 0.55);
+        border: 1px solid var(--study-border);
+        border-radius: 16px;
+        padding: 1.4rem 1.5rem;
+    }
+
+    body.dark-mode .example-panel { background: rgba(255, 255, 255, 0.04); }
+
+    .tpl-head {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 0.6rem;
+        margin-bottom: 0.4rem;
+    }
+
+    .tpl-head h3 { font-family: 'Playfair Display', serif; margin: 0; color: var(--study-text); }
+
+    .tpl-badge {
+        font-size: 0.72rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        padding: 0.2rem 0.65rem;
+        border-radius: 50px;
+        background: rgba(212, 181, 232, 0.3);
+        color: var(--study-text);
+        border: 1px solid var(--study-border);
+    }
+
+    .tpl-row { margin: 1rem 0; }
+    .tpl-row > h4 {
+        font-size: 0.8rem;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: var(--study-muted);
+        margin-bottom: 0.35rem;
+    }
+    .tpl-row > h4 i { margin-right: 0.4rem; }
+    .tpl-row p { margin: 0; color: var(--study-text); }
+
+    .tpl-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0.85rem;
+    }
+
+    .tpl-mini {
+        background: rgba(212, 181, 232, 0.12);
+        border: 1px solid var(--study-border);
+        border-radius: 10px;
+        padding: 0.6rem 0.8rem;
+    }
+    .tpl-mini span { display: block; font-size: 0.72rem; color: var(--study-muted); }
+    .tpl-mini code { color: var(--study-text); font-size: 0.9rem; word-break: break-word; }
+
+    .builds-on {
+        background: linear-gradient(135deg, rgba(200, 230, 201, 0.25), rgba(255, 249, 196, 0.25));
+        border-left: 4px solid #c8e6c9;
+        border-radius: 0 10px 10px 0;
+        padding: 0.6rem 0.9rem;
+        font-size: 0.9rem;
+        margin-bottom: 1rem;
+        color: var(--study-text);
+    }
+
+    .tpl-insight {
+        background: linear-gradient(135deg, rgba(212, 181, 232, 0.18), rgba(245, 201, 212, 0.18));
+        border-radius: 12px;
+        padding: 0.75rem 1rem;
+        font-size: 0.92rem;
+        color: var(--study-text);
+    }
+
+    .tpl-insight strong { color: var(--study-text); }
+
+    pre.tpl-code {
+        background: var(--study-code-bg);
+        color: var(--study-code-text);
+        border-radius: 12px;
+        padding: 1rem 1.1rem;
+        overflow-x: auto;
+        font-size: 0.83rem;
+        line-height: 1.55;
+        margin: 0;
+        font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+        tab-size: 4;
+    }
+    pre.tpl-code code { color: inherit; white-space: pre; }
+
+    /* ── Responsive ── */
+    @@media (max-width: 900px) {
+        .study-shell { grid-template-columns: 1fr; }
+        .chapter-rail { position: static; }
+        .example-layout { grid-template-columns: 1fr; }
+        .tpl-grid { grid-template-columns: 1fr; }
+    }
+</style>
+
+<div class="study-page">
+    <header class="study-hero">
+        <h1>📚 Study Hub</h1>
+        <p>A modular, section-based place to learn computer-science topics in depth. Pick a chapter on the
+            left, then move through its sections. The first chapter dives into <strong>Dynamic Programming</strong>.</p>
+    </header>
+
+    <div class="study-shell">
+        <!-- ── Chapter Rail (modular: add more chapters here) ── -->
+        <aside class="chapter-rail" aria-label="Study chapters">
+            <h2>Chapters</h2>
+            <button class="chapter-btn active" data-chapter="dp" type="button" aria-pressed="true">
+                <span class="chap-emoji">🧩</span>
+                <span>Dynamic Programming
+                    <small>Foundations · 10 examples · 5 edge cases</small></span>
+            </button>
+            <button class="chapter-btn" type="button" disabled>
+                <span class="chap-emoji">🌐</span>
+                <span>Graph Algorithms
+                    <small>Coming soon</small></span>
+            </button>
+            <button class="chapter-btn" type="button" disabled>
+                <span class="chap-emoji">⚡</span>
+                <span>Greedy &amp; Heaps
+                    <small>Coming soon</small></span>
+            </button>
+        </aside>
+
+        <!-- ── Chapter Body ── -->
+        <div class="chapter-body" id="chapter-dp">
+            <nav class="section-tabs" aria-label="Dynamic Programming sections">
+                <button class="section-tab active" data-section="overview" type="button">Overview</button>
+                <button class="section-tab" data-section="how" type="button">How It Works</button>
+                <button class="section-tab" data-section="patterns" type="button">Core Patterns</button>
+                <button class="section-tab" data-section="examples" type="button">10 Worked Examples</button>
+                <button class="section-tab" data-section="edges" type="button">5 Edge Cases</button>
+            </nav>
+
+            <!-- Section: Overview -->
+            <section class="study-section active" data-section="overview">
+                <h3>What is Dynamic Programming?</h3>
+                <p><strong>Dynamic Programming (DP)</strong> is a problem-solving technique for optimization and
+                    counting problems. It works by breaking a hard problem into smaller subproblems, solving each
+                    subproblem <em>once</em>, and storing the answer so it never has to be recomputed.</p>
+
+                <div class="lead-note">
+                    💡 The whole idea in one sentence: <strong>“Remember the work you already did so you never do
+                    it twice.”</strong> A plain recursive solution may solve the same subproblem millions of times;
+                    DP solves it once and looks it up afterward.
+                </div>
+
+                <p>A problem is a good candidate for DP when it has these two properties:</p>
+                <div class="concept-grid">
+                    <div class="concept-card">
+                        <h4>① Optimal Substructure</h4>
+                        <p>The best answer to the whole problem can be built from the best answers to its
+                            subproblems. (e.g. the shortest path through a city uses shortest paths to earlier cities.)</p>
+                    </div>
+                    <div class="concept-card">
+                        <h4>② Overlapping Subproblems</h4>
+                        <p>The same subproblems show up again and again. Caching their results turns exponential
+                            recursion into polynomial time.</p>
+                    </div>
+                </div>
+
+                <p>If subproblems <em>don’t</em> overlap, plain divide-and-conquer (like merge sort) is the right
+                    tool instead — DP only pays off when results are reused.</p>
+            </section>
+
+            <!-- Section: How It Works -->
+            <section class="study-section" data-section="how">
+                <h3>How Dynamic Programming Works</h3>
+                <p>There are two equivalent ways to implement any DP. They compute the same values in a different
+                    order:</p>
+
+                <div class="concept-grid">
+                    <div class="concept-card">
+                        <h4>Top-Down (Memoization)</h4>
+                        <p>Write the natural recursion, then cache each result in a map or array. The first time a
+                            subproblem is requested it is computed; after that it is read from the cache.</p>
+                    </div>
+                    <div class="concept-card">
+                        <h4>Bottom-Up (Tabulation)</h4>
+                        <p>Fill a table starting from the smallest base cases and building toward the answer. No
+                            recursion, no stack overflow, and often easier to optimize for space.</p>
+                    </div>
+                </div>
+
+                <h3 style="margin-top:1.5rem">A repeatable 5-step recipe</h3>
+                <ol class="step-list">
+                    <li><strong>Define the state.</strong> What do the indices/parameters of your subproblem mean?
+                        e.g. <code>dp[i]</code> = best answer using the first <code>i</code> items.</li>
+                    <li><strong>Write the recurrence.</strong> Express <code>dp[i]</code> in terms of smaller states.</li>
+                    <li><strong>Set the base cases.</strong> The smallest states you can answer directly.</li>
+                    <li><strong>Decide an evaluation order.</strong> Memoize top-down, or iterate so dependencies are
+                        ready bottom-up.</li>
+                    <li><strong>Read off the answer</strong> and, if needed, optimize the space.</li>
+                </ol>
+
+                <div class="lead-note">
+                    These five steps are exactly the template used by every example in the next tab — the only thing
+                    that changes is how rich the <em>state</em> and <em>recurrence</em> become.
+                </div>
+            </section>
+
+            <!-- Section: Core Patterns -->
+            <section class="study-section" data-section="patterns">
+                <h3>Core DP Patterns</h3>
+                <p>Most DP problems are variations on a handful of state shapes. Recognizing the shape tells you what
+                    the table should look like before you write a line of code.</p>
+                <div class="concept-grid">
+                    <div class="concept-card">
+                        <h4>1-D Sequence</h4>
+                        <p><code>dp[i]</code> over one index — Fibonacci, climbing stairs, house robber, LIS.</p>
+                    </div>
+                    <div class="concept-card">
+                        <h4>Unbounded / Knapsack</h4>
+                        <p>Choose items under a capacity — coin change, 0/1 knapsack.</p>
+                    </div>
+                    <div class="concept-card">
+                        <h4>2-D Grid / Two Strings</h4>
+                        <p><code>dp[i][j]</code> comparing two sequences — LCS, edit distance.</p>
+                    </div>
+                    <div class="concept-card">
+                        <h4>Interval DP</h4>
+                        <p>Solve a range <code>[i..j]</code> by splitting it — matrix chain, partitioning.</p>
+                    </div>
+                    <div class="concept-card">
+                        <h4>Bitmask DP</h4>
+                        <p>State is a <em>set</em> encoded in bits — Travelling Salesman, assignment.</p>
+                    </div>
+                    <div class="concept-card">
+                        <h4>Space Optimization</h4>
+                        <p>If <code>dp[i]</code> only needs <code>dp[i-1]</code>, keep a couple of variables instead
+                            of a whole array.</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Section: 10 Worked Examples -->
+            <section class="study-section" data-section="examples">
+                <h3>10 Worked Examples — easiest to hardest</h3>
+                <p>Every example below uses the <strong>same base template</strong> (Problem → State → Recurrence →
+                    Base cases → Complexity → Code → Key insight). Each one builds on the previous, adding one new
+                    idea at a time. Click through them in order.</p>
+                <div class="example-layout">
+                    <ol class="example-list" id="exampleList" aria-label="Example selector"></ol>
+                    <article class="example-panel" id="examplePanel" aria-live="polite"></article>
+                </div>
+            </section>
+
+            <!-- Section: 5 Edge Cases -->
+            <section class="study-section" data-section="edges">
+                <h3>5 Edge Cases Every DP Solution Must Handle</h3>
+                <p>Once you can write the recurrence, the bugs live in the corners. These five edge cases use the
+                    same template and show what breaks — and how to defend against it.</p>
+                <div class="example-layout">
+                    <ol class="example-list" id="edgeList" aria-label="Edge case selector"></ol>
+                    <article class="example-panel" id="edgePanel" aria-live="polite"></article>
+                </div>
+            </section>
+        </div>
+    </div>
+</div>
+
+<script>
+/* ══════════════════════════════════════════════════════════════
+   Study Hub — reactive, data-driven rendering
+   Each example is a plain data object rendered through ONE shared
+   template (renderExample). Add objects to grow the chapter.
+═══════════════════════════════════════════════════════════════ */
+
+/* Shared escaping so code blocks render literally and safely. */
+function esc(s) {
+    return String(s)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+}
+
+/* The 10 worked examples — ordered easiest (1) → hardest (10). */
+const dpExamples = [
+    {
+        title: 'Fibonacci Numbers',
+        difficulty: 1, shape: '1-D · single index',
+        problem: 'Compute the n-th Fibonacci number, where F(0)=0, F(1)=1, and F(n)=F(n-1)+F(n-2).',
+        buildsOn: 'The starting point: the simplest possible recurrence with one variable and two base cases.',
+        state: 'dp[i] = the i-th Fibonacci number',
+        recurrence: 'dp[i] = dp[i-1] + dp[i-2]',
+        base: 'dp[0] = 0, dp[1] = 1',
+        time: 'O(n)', space: 'O(1) with rolling variables',
+        insight: 'Naive recursion is O(2^n) because F(n-2) is recomputed constantly. Caching collapses it to O(n) — the single clearest demonstration of "overlapping subproblems".',
+        code:
+`long Fib(int n)
+{
+    if (n < 2) return n;          // base cases
+    long prev = 0, curr = 1;      // dp[0], dp[1]
+    for (int i = 2; i <= n; i++)
+    {
+        long next = prev + curr;  // dp[i] = dp[i-1] + dp[i-2]
+        prev = curr;
+        curr = next;
+    }
+    return curr;
+}`
+    },
+    {
+        title: 'Climbing Stairs',
+        difficulty: 2, shape: '1-D · counting',
+        problem: 'You can climb 1 or 2 steps at a time. In how many distinct ways can you reach the top of n stairs?',
+        buildsOn: 'Same recurrence as Fibonacci — but now we are COUNTING ways instead of summing values. Recognizing that two different stories share one recurrence is a core DP skill.',
+        state: 'dp[i] = number of distinct ways to reach step i',
+        recurrence: 'dp[i] = dp[i-1] + dp[i-2]',
+        base: 'dp[0] = 1 (one way: stay), dp[1] = 1',
+        time: 'O(n)', space: 'O(1)',
+        insight: 'To reach step i your last move was either +1 (from i-1) or +2 (from i-2), so the ways add up. The "+1 / +2 choice" is your first taste of summing over decisions.',
+        code:
+`int ClimbStairs(int n)
+{
+    int oneBack = 1, twoBack = 1; // dp[1], dp[0]
+    for (int i = 2; i <= n; i++)
+    {
+        int cur = oneBack + twoBack;
+        twoBack = oneBack;
+        oneBack = cur;
+    }
+    return oneBack;
+}`
+    },
+    {
+        title: 'Min Cost Climbing Stairs',
+        difficulty: 3, shape: '1-D · minimization',
+        problem: 'Each stair i has a cost[i]. You may start at index 0 or 1 and step 1 or 2 at a time. Find the minimum total cost to go past the top.',
+        buildsOn: 'Adds a COST and switches the goal from counting to minimizing. The "two choices" stay, but now we take the cheaper one with Math.Min instead of adding.',
+        state: 'dp[i] = minimum cost to reach stair i',
+        recurrence: 'dp[i] = cost[i] + min(dp[i-1], dp[i-2])',
+        base: 'dp[0] = cost[0], dp[1] = cost[1]',
+        time: 'O(n)', space: 'O(1)',
+        insight: 'Counting used "+"; optimization uses "min". The state and choices are identical — only the combine operator changes. This single swap unlocks a huge family of problems.',
+        code:
+`int MinCostClimbing(int[] cost)
+{
+    int n = cost.Length;
+    int a = cost[0], b = cost[1];     // dp[0], dp[1]
+    for (int i = 2; i < n; i++)
+    {
+        int cur = cost[i] + Math.Min(a, b);
+        a = b;
+        b = cur;
+    }
+    return Math.Min(a, b);            // top is just past the last stair
+}`
+    },
+    {
+        title: 'House Robber',
+        difficulty: 4, shape: '1-D · take / skip',
+        problem: 'Houses in a row each hold money[i]. You cannot rob two adjacent houses. Maximize the money you can rob.',
+        buildsOn: 'Introduces a genuine DECISION at each index: take this house (and skip the neighbour) or skip it. This "include vs. exclude" pattern is the backbone of every knapsack problem ahead.',
+        state: 'dp[i] = max money robbing among the first i+1 houses',
+        recurrence: 'dp[i] = max(dp[i-1], money[i] + dp[i-2])',
+        base: 'dp[0] = money[0], dp[1] = max(money[0], money[1])',
+        time: 'O(n)', space: 'O(1)',
+        insight: 'For each house you compare the best WITHOUT it (dp[i-1]) against taking it plus the best two back (money[i] + dp[i-2]). "Take or skip" is the seed of 0/1 knapsack.',
+        code:
+`int Rob(int[] money)
+{
+    int prev = 0, curr = 0;            // dp[-1], dp[0] conceptually
+    foreach (int m in money)
+    {
+        int take = m + prev;           // rob this house
+        int skip = curr;               // skip this house
+        prev = curr;
+        curr = Math.Max(take, skip);
+    }
+    return curr;
+}`
+    },
+    {
+        title: 'Coin Change (Minimum Coins)',
+        difficulty: 5, shape: '1-D · unbounded choice',
+        problem: 'Given coin denominations and an amount, return the fewest coins that sum to the amount, or -1 if it is impossible.',
+        buildsOn: 'The decision is no longer binary — at every amount you try EVERY coin (an inner loop). It also introduces an "impossible" sentinel, foreshadowing the edge-case section.',
+        state: 'dp[a] = fewest coins that make amount a',
+        recurrence: 'dp[a] = 1 + min(dp[a - c]) over every coin c ≤ a',
+        base: 'dp[0] = 0; all other dp[a] start at "infinity"',
+        time: 'O(amount × coins)', space: 'O(amount)',
+        insight: 'Looping over coins inside the amount loop is your first multi-choice transition. Keeping an "infinity" sentinel lets you detect unreachable amounts cleanly and return -1.',
+        code:
+`int CoinChange(int[] coins, int amount)
+{
+    int INF = amount + 1;
+    var dp = new int[amount + 1];
+    Array.Fill(dp, INF);
+    dp[0] = 0;                                  // base case
+    for (int a = 1; a <= amount; a++)
+        foreach (int c in coins)
+            if (c <= a)
+                dp[a] = Math.Min(dp[a], 1 + dp[a - c]);
+    return dp[amount] > amount ? -1 : dp[amount];
+}`
+    },
+    {
+        title: 'Longest Increasing Subsequence',
+        difficulty: 6, shape: '1-D · O(n²) scan',
+        problem: 'Find the length of the longest strictly increasing subsequence in an array (elements need not be contiguous).',
+        buildsOn: 'The transition for dp[i] now scans ALL earlier indices j < i, not just one or two. This "look back over everything smaller" pattern leads naturally into 2-D table problems.',
+        state: 'dp[i] = length of the longest increasing subsequence ending exactly at index i',
+        recurrence: 'dp[i] = 1 + max(dp[j]) for every j < i with nums[j] < nums[i]',
+        base: 'dp[i] = 1 (each element alone is a subsequence of length 1)',
+        time: 'O(n²)', space: 'O(n)',
+        insight: 'The answer is the max over all dp[i], not dp[last] — because the longest subsequence can end anywhere. Scanning all previous states is the bridge to 2-D dynamic programming.',
+        code:
+`int LengthOfLIS(int[] nums)
+{
+    int n = nums.Length;
+    var dp = new int[n];
+    Array.Fill(dp, 1);                       // each element alone
+    int best = n == 0 ? 0 : 1;
+    for (int i = 1; i < n; i++)
+        for (int j = 0; j < i; j++)
+            if (nums[j] < nums[i])
+            {
+                dp[i] = Math.Max(dp[i], dp[j] + 1);
+                best = Math.Max(best, dp[i]);
+            }
+    return best;
+}`
+    },
+    {
+        title: '0/1 Knapsack',
+        difficulty: 7, shape: '2-D · items × capacity',
+        problem: 'Given items with a weight and value, and a bag capacity W, maximize total value without exceeding W. Each item is used at most once.',
+        buildsOn: 'Promotes "take or skip" (House Robber) into TWO dimensions: which item AND how much capacity remains. This is the canonical 2-D table.',
+        state: 'dp[i][w] = best value using the first i items with capacity w',
+        recurrence: 'dp[i][w] = max( dp[i-1][w],  value[i] + dp[i-1][w - weight[i]] )',
+        base: 'dp[0][*] = 0 (no items ⇒ no value)',
+        time: 'O(items × W)', space: 'O(W) when rolled to one row',
+        insight: 'Iterating capacity in REVERSE collapses the 2-D table into a 1-D array while still forbidding reuse of an item — the classic 0/1 space optimization.',
+        code:
+`int Knapsack(int[] weight, int[] value, int W)
+{
+    var dp = new int[W + 1];                  // rolled 1-D table
+    for (int i = 0; i < weight.Length; i++)
+        for (int w = W; w >= weight[i]; w--)  // reverse ⇒ each item once
+            dp[w] = Math.Max(dp[w], value[i] + dp[w - weight[i]]);
+    return dp[W];
+}`
+    },
+    {
+        title: 'Longest Common Subsequence',
+        difficulty: 8, shape: '2-D · two strings',
+        problem: 'Given two strings, find the length of the longest subsequence common to both (characters in order, not necessarily contiguous).',
+        buildsOn: 'The two table dimensions now index TWO different inputs instead of items × capacity. This is the template for nearly every string-vs-string DP.',
+        state: 'dp[i][j] = LCS length of a[0..i) and b[0..j)',
+        recurrence: 'if a[i-1]==b[j-1]: dp[i][j]=dp[i-1][j-1]+1; else max(dp[i-1][j], dp[i][j-1])',
+        base: 'dp[0][*] = dp[*][0] = 0 (empty string matches nothing)',
+        time: 'O(n × m)', space: 'O(n × m)',
+        insight: 'A matching pair walks diagonally (consume both); a mismatch drops one character from either string. That diagonal-vs-orthogonal move set generalizes to edit distance next.',
+        code:
+`int Lcs(string a, string b)
+{
+    int n = a.Length, m = b.Length;
+    var dp = new int[n + 1, m + 1];           // base row/col are zero
+    for (int i = 1; i <= n; i++)
+        for (int j = 1; j <= m; j++)
+            dp[i, j] = a[i - 1] == b[j - 1]
+                ? dp[i - 1, j - 1] + 1
+                : Math.Max(dp[i - 1, j], dp[i, j - 1]);
+    return dp[n, m];
+}`
+    },
+    {
+        title: 'Edit Distance (Levenshtein)',
+        difficulty: 9, shape: '2-D · three transitions',
+        problem: 'Find the minimum number of single-character insertions, deletions, or substitutions to turn string a into string b.',
+        buildsOn: 'Same 2-D grid as LCS, but each cell now chooses the cheapest of THREE operations. More transitions per state = a richer recurrence on the same table shape.',
+        state: 'dp[i][j] = min edits to turn a[0..i) into b[0..j)',
+        recurrence: 'match ⇒ dp[i-1][j-1]; else 1 + min(insert dp[i][j-1], delete dp[i-1][j], replace dp[i-1][j-1])',
+        base: 'dp[i][0] = i (delete all), dp[0][j] = j (insert all)',
+        time: 'O(n × m)', space: 'O(n × m), reducible to O(min(n,m))',
+        insight: 'The non-empty base cases are the trap: turning a string into "" costs one delete per character. Get those right and the three-way min just falls out.',
+        code:
+`int EditDistance(string a, string b)
+{
+    int n = a.Length, m = b.Length;
+    var dp = new int[n + 1, m + 1];
+    for (int i = 0; i <= n; i++) dp[i, 0] = i;   // delete all
+    for (int j = 0; j <= m; j++) dp[0, j] = j;   // insert all
+    for (int i = 1; i <= n; i++)
+        for (int j = 1; j <= m; j++)
+            dp[i, j] = a[i - 1] == b[j - 1]
+                ? dp[i - 1, j - 1]
+                : 1 + Math.Min(dp[i - 1, j - 1],
+                      Math.Min(dp[i, j - 1], dp[i - 1, j]));
+    return dp[n, m];
+}`
+    },
+    {
+        title: 'Travelling Salesman (Bitmask DP)',
+        difficulty: 10, shape: 'Exponential · subset state',
+        problem: 'Given a distance matrix for n cities, find the shortest tour that starts at city 0, visits every city exactly once, and returns to 0.',
+        buildsOn: 'The final leap: the state is no longer an index but a SET of visited cities, encoded as the bits of an integer. The "take or skip" choice becomes "which unvisited city next".',
+        state: 'dp[mask][i] = shortest path that has visited the cities in mask and currently sits at city i',
+        recurrence: 'dp[mask | 1<<j][j] = min over i in mask of dp[mask][i] + dist[i][j]',
+        base: 'dp[1][0] = 0 (start at city 0, only it visited)',
+        time: 'O(2^n × n²)', space: 'O(2^n × n)',
+        insight: 'Packing a subset into an int turns "all permutations" (n!) into a manageable 2^n × n table. Bitmask DP is how exponential problems become tractable for n up to ~20.',
+        code:
+`int Tsp(int[][] dist)
+{
+    int n = dist.Length, FULL = (1 << n) - 1, INF = int.MaxValue / 2;
+    var dp = new int[1 << n, n];
+    for (int m = 0; m < (1 << n); m++)
+        for (int i = 0; i < n; i++) dp[m, i] = INF;
+    dp[1, 0] = 0;                                  // start at city 0
+    for (int mask = 1; mask <= FULL; mask++)
+        for (int i = 0; i < n; i++)
+        {
+            if (dp[mask, i] == INF || (mask & (1 << i)) == 0) continue;
+            for (int j = 0; j < n; j++)
+                if ((mask & (1 << j)) == 0)         // city j not yet visited
+                    dp[mask | (1 << j), j] = Math.Min(
+                        dp[mask | (1 << j), j],
+                        dp[mask, i] + dist[i][j]);
+        }
+    int best = INF;
+    for (int i = 1; i < n; i++)
+        best = Math.Min(best, dp[FULL, i] + dist[i][0]); // return home
+    return best;
+}`
+    }
+];
+
+/* The 5 edge cases — same template, focused on what breaks. */
+const dpEdgeCases = [
+    {
+        title: 'Empty Input',
+        difficulty: 1, shape: 'Base case · identity',
+        problem: 'What should a DP return when the input is empty (n = 0, "", or an empty array)?',
+        buildsOn: 'Edge case for every example above: the loop body never runs, so the answer must come entirely from correctly initialized base values.',
+        state: 'The base/identity value of the accumulator',
+        recurrence: '— (no transitions execute)',
+        base: 'Return the identity: 0 for sums/counts-as-cost, 1 for counting "do nothing", "" for strings.',
+        time: 'O(1)', space: 'O(1)',
+        insight: 'Pick the value that makes the FIRST real transition correct. For min-cost it is 0; for "number of ways to make 0" it is 1. A wrong identity silently corrupts every later cell.',
+        code:
+`// Coin Change with an empty amount:
+// dp[0] = 0 is the identity, so an empty target needs zero coins.
+int CoinChange(int[] coins, int amount)
+{
+    if (amount == 0) return 0;     // explicit guard = self-documenting
+    // ... main loop relies on dp[0] = 0 anyway
+}`
+    },
+    {
+        title: 'Single Element',
+        difficulty: 2, shape: 'Off-by-one boundary',
+        problem: 'Inputs of length 1 often crash solutions that assume dp[i-1] AND dp[i-2] both exist.',
+        buildsOn: 'Directly stresses Climbing Stairs / House Robber, whose recurrences reach two cells back.',
+        state: 'Same as the parent problem',
+        recurrence: 'Guard the recurrence so it never indexes below 0',
+        base: 'Answer the n = 1 case before the main loop starts',
+        time: 'O(1) extra', space: 'O(1)',
+        insight: 'Any recurrence that reads dp[i-2] needs either an explicit n==1 short-circuit or sentinel cells. This is the single most common DP crash.',
+        code:
+`int Rob(int[] money)
+{
+    if (money.Length == 0) return 0;
+    if (money.Length == 1) return money[0];   // guard before dp[i-2]
+    // ... safe to reference two cells back from here
+    return 0;
+}`
+    },
+    {
+        title: 'Integer Overflow',
+        difficulty: 3, shape: 'Numeric range',
+        problem: 'Counting/summing DPs (Fibonacci, counting paths) overflow 32-bit int surprisingly fast — F(47) already exceeds int.MaxValue.',
+        buildsOn: 'The Fibonacci and Climbing-Stairs recurrences are correct, but the data TYPE silently wraps to negative values.',
+        state: 'Same recurrence, wider type',
+        recurrence: 'Unchanged — only the storage type or modulus changes',
+        base: 'Use long / BigInteger, or take results mod 1e9+7 when the problem says so',
+        time: 'Unchanged', space: 'Unchanged',
+        insight: 'A correct recurrence can still produce garbage from overflow. Decide the value range up front: long for ~F(90), BigInteger beyond, or a modulus when only the remainder is asked for.',
+        code:
+`using System.Numerics;
+
+BigInteger Fib(int n)
+{
+    BigInteger a = 0, b = 1;        // no overflow, ever
+    for (int i = 0; i < n; i++)
+    {
+        (a, b) = (b, a + b);
+    }
+    return a;
+}`
+    },
+    {
+        title: 'Unreachable / No Solution',
+        difficulty: 4, shape: 'Sentinel handling',
+        problem: 'Coin Change may have no valid combination. The code must distinguish "impossible" from a real numeric answer.',
+        buildsOn: 'Extends Coin Change: the INF sentinel must survive untouched and be translated into -1.',
+        state: 'dp[a], pre-filled with a sentinel larger than any real answer',
+        recurrence: 'Only relax dp[a] from a state that is itself reachable',
+        base: 'dp[0] = 0; everything else = INF; map a leftover INF to -1',
+        time: 'Unchanged', space: 'Unchanged',
+        insight: 'Choose a sentinel you can test cheaply (amount + 1) and never let it participate in arithmetic that could look like a valid total. Translate it exactly once, at the very end.',
+        code:
+`int CoinChange(int[] coins, int amount)
+{
+    int INF = amount + 1;                      // bigger than any real answer
+    var dp = new int[amount + 1];
+    Array.Fill(dp, INF);
+    dp[0] = 0;
+    for (int a = 1; a <= amount; a++)
+        foreach (int c in coins)
+            if (c <= a && dp[a - c] != INF)    // only from reachable states
+                dp[a] = Math.Min(dp[a], dp[a - c] + 1);
+    return dp[amount] == INF ? -1 : dp[amount];
+}`
+    },
+    {
+        title: 'Negative Weights & Cycles',
+        difficulty: 5, shape: 'When DP breaks down',
+        problem: 'Shortest-path DP assumes you can order subproblems so each is solved before it is needed. A negative-weight cycle destroys that ordering — the "best" answer is negative infinity.',
+        buildsOn: 'The hardest lesson: DP only works when subproblems form a Directed Acyclic ordering. This case shows the limit reached by the TSP-style state thinking.',
+        state: 'dist[v] = shortest distance to vertex v',
+        recurrence: 'Relax edges |V|−1 times; a further successful relax ⇒ a negative cycle exists',
+        base: 'dist[source] = 0, all others = +∞',
+        time: 'O(V × E)', space: 'O(V)',
+        insight: 'If there is no valid evaluation order (a cycle of negative total weight), plain DP/memoization loops forever or returns nonsense. Bellman-Ford adds an extra pass purely to DETECT that DP is invalid here.',
+        code:
+`bool BellmanFord(int n, int[][] edges, int src, out long[] dist)
+{
+    const long INF = long.MaxValue / 4;
+    dist = new long[n];
+    Array.Fill(dist, INF);
+    dist[src] = 0;
+    for (int i = 0; i < n - 1; i++)            // |V|-1 relaxation passes
+        foreach (var e in edges)               // e = {u, v, w}
+            if (dist[e[0]] != INF)
+                dist[e[1]] = Math.Min(dist[e[1]], dist[e[0]] + e[2]);
+    foreach (var e in edges)                   // one extra pass…
+        if (dist[e[0]] != INF && dist[e[0]] + e[2] < dist[e[1]])
+            return false;                      // …still improves ⇒ neg cycle
+    return true;
+}`
+    }
+];
+
+/* ── The ONE shared template every example is rendered through ── */
+function renderExample(ex, ordinal) {
+    const dots = Array.from({ length: 5 }, (_, k) =>
+        `<i class="${k < ex.difficulty ? 'on' : ''}"></i>`).join('');
+    return `
+        <div class="tpl-head">
+            <span class="tpl-badge">Example ${ordinal}</span>
+            <h3>${esc(ex.title)}</h3>
+            <span class="diff" title="Difficulty ${ex.difficulty}/5">${dots}</span>
+            <span class="tpl-badge">${esc(ex.shape)}</span>
+        </div>
+        <div class="builds-on">🔗 <strong>Builds on:</strong> ${esc(ex.buildsOn)}</div>
+
+        <div class="tpl-row">
+            <h4><i class="fas fa-bullseye"></i>Problem</h4>
+            <p>${esc(ex.problem)}</p>
+        </div>
+
+        <div class="tpl-row tpl-grid">
+            <div class="tpl-mini"><span>State</span><code>${esc(ex.state)}</code></div>
+            <div class="tpl-mini"><span>Base cases</span><code>${esc(ex.base)}</code></div>
+            <div class="tpl-mini" style="grid-column:1 / -1"><span>Recurrence</span><code>${esc(ex.recurrence)}</code></div>
+            <div class="tpl-mini"><span>Time</span><code>${esc(ex.time)}</code></div>
+            <div class="tpl-mini"><span>Space</span><code>${esc(ex.space)}</code></div>
+        </div>
+
+        <div class="tpl-row">
+            <h4><i class="fas fa-code"></i>Implementation (C#)</h4>
+            <pre class="tpl-code"><code>${esc(ex.code)}</code></pre>
+        </div>
+
+        <div class="tpl-insight">💡 <strong>Key insight:</strong> ${esc(ex.insight)}</div>
+    `;
+}
+
+/* ── Wire a {list, panel, data} triple into a reactive selector ── */
+function mountSelector(listId, panelId, data) {
+    const list = document.getElementById(listId);
+    const panel = document.getElementById(panelId);
+    if (!list || !panel) return;
+
+    data.forEach((ex, i) => {
+        const li = document.createElement('li');
+        const dots = Array.from({ length: 5 }, (_, k) =>
+            `<i class="${k < ex.difficulty ? 'on' : ''}"></i>`).join('');
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'example-link' + (i === 0 ? ' active' : '');
+        btn.innerHTML = `
+            <span class="ex-index">${i + 1}</span>
+            <span class="ex-meta">
+                <strong>${esc(ex.title)}</strong>
+                <small>${esc(ex.shape)} <span class="diff">${dots}</span></small>
+            </span>`;
+        btn.addEventListener('click', () => {
+            list.querySelectorAll('.example-link').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            panel.innerHTML = renderExample(ex, i + 1);
+        });
+        li.appendChild(btn);
+        list.appendChild(li);
+    });
+
+    panel.innerHTML = renderExample(data[0], 1);  // initial render
+}
+
+/* ── Section tab switching (reactive) ── */
+document.querySelectorAll('.section-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+        const target = tab.dataset.section;
+        document.querySelectorAll('.section-tab').forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+        document.querySelectorAll('.study-section').forEach(s =>
+            s.classList.toggle('active', s.dataset.section === target));
+    });
+});
+
+/* ── Boot ── */
+mountSelector('exampleList', 'examplePanel', dpExamples);
+mountSelector('edgeList', 'edgePanel', dpEdgeCases);
+</script>
