@@ -624,7 +624,7 @@ const dpExamples = [
         code:
 `int ClimbStairs(int n)
 {
-    int oneBack = 1, twoBack = 1; // dp[1], dp[0]
+    int oneBack = 1, twoBack = 1; // oneBack = dp[1], twoBack = dp[0]
     for (int i = 2; i <= n; i++)
     {
         int cur = oneBack + twoBack;
@@ -671,7 +671,7 @@ const dpExamples = [
         code:
 `int Rob(int[] money)
 {
-    int prev = 0, curr = 0;            // dp[-1], dp[0] conceptually
+    int prev = 0, curr = 0;            // prev = best two houses back, curr = best so far
     foreach (int m in money)
     {
         int take = m + prev;           // rob this house
@@ -1019,6 +1019,23 @@ function mountSelector(listId, panelId, data) {
 
     panel.innerHTML = renderExample(data[0], 1);  // initial render
 }
+
+/* ── Chapter switching (reactive, modular) ──
+   Each enabled chapter button maps to a body element #chapter-<key>.
+   Adding a new chapter = add a button + a matching chapter body. */
+document.querySelectorAll('.chapter-btn[data-chapter]').forEach(btn => {
+    btn.addEventListener('click', () => {
+        if (btn.disabled) return;
+        const key = btn.dataset.chapter;
+        document.querySelectorAll('.chapter-btn[data-chapter]').forEach(b => {
+            const on = b === btn;
+            b.classList.toggle('active', on);
+            b.setAttribute('aria-pressed', on ? 'true' : 'false');
+        });
+        document.querySelectorAll('[id^="chapter-"]').forEach(body =>
+            body.style.display = body.id === 'chapter-' + key ? '' : 'none');
+    });
+});
 
 /* ── Section tab switching (reactive) ── */
 document.querySelectorAll('.section-tab').forEach(tab => {
