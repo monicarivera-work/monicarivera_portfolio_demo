@@ -1,13 +1,34 @@
+using Microsoft.AspNetCore.Authentication.OpenIdConnect;
+using Microsoft.Identity.Web;
 using PortfolioDemo.Services;
 using System.Threading.RateLimiting;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// ── Authentication: Microsoft Entra ID (Azure AD) ──────────────────────────
+// Requires AzureAd:TenantId and AzureAd:ClientId in configuration.
+// If the section is absent the app still starts; sessions require login to work.
+builder.Services.AddAuthentication(OpenIdConnectDefaults.AuthenticationScheme)
+    .AddMicrosoftIdentityWebApp(builder.Configuration.GetSection("AzureAd"));
+
+builder.Services.AddAuthorization();
 
 // Add services to the container.
 builder.Services.AddRazorPages();
 builder.Services.AddControllers();
 builder.Services.AddHttpClient();
 builder.Services.AddSingleton<IUnansweredQuestionService, UnansweredQuestionService>();
+builder.Services.AddSingleton<ISessionService, SessionService>();
+builder.Services.AddScoped<ILeetCodeService, LeetCodeService>();
+
+// Named HTTP client for LeetCode with appropriate headers
+builder.Services.AddHttpClient("LeetCode", client =>
+{
+    client.DefaultRequestHeaders.Add("User-Agent",
+        "Mozilla/5.0 (compatible; PortfolioDemo/1.0; +https://monicarivera-portfolio-demo.azurewebsites.net)");
+    client.DefaultRequestHeaders.Add("Accept", "application/json");
+    client.Timeout = TimeSpan.FromSeconds(10);
+});
 
 // Add Application Insights telemetry
 builder.Services.AddApplicationInsightsTelemetry();
@@ -90,16 +111,19 @@ app.Use(async (context, next) =>
     headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=(), payment=()";
 
     // Content Security Policy
-    // Allows: local resources, Bootstrap/FA from CDN, Google Fonts, Azure App Insights
+    // Allows: local resources, Bootstrap/FA from CDN, Google Fonts, Azure App Insights,
+    //         Chart.js from jsDelivr (LeetCode page), LeetCode avatar images,
+    //         sandboxed iframes with blob/data srcdoc (CodeLab visualizer)
     headers["Content-Security-Policy"] =
         "default-src 'self'; " +
-        "script-src 'self' 'unsafe-inline' https://js.monitor.azure.com; " +
+        "script-src 'self' 'unsafe-inline' https://js.monitor.azure.com https://cdn.jsdelivr.net; " +
         "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; " +
         "font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com; " +
-        "img-src 'self' data:; " +
-        "connect-src 'self' https://*.monitor.azure.com https://*.applicationinsights.azure.com https://*.in.applicationinsights.azure.com; " +
+        "img-src 'self' data: https://assets.leetcode.com https://s3-us-west-1.amazonaws.com; " +
+        "connect-src 'self' https://*.monitor.azure.com https://*.applicationinsights.azure.com https://*.in.applicationinsights.azure.com https://login.microsoftonline.com; " +
+        "frame-src 'self'; " +
         "frame-ancestors 'none'; " +
-        "form-action 'self'; " +
+        "form-action 'self' https://login.microsoftonline.com; " +
         "base-uri 'self';";
 
     await next();
@@ -113,6 +137,7 @@ app.UseRouting();
 
 app.UseRateLimiter();
 
+app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();

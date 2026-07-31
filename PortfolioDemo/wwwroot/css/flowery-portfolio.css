@@ -627,3 +627,30 @@ h1, h2, h3 {
 .card, .skills-section, .experience-item, .education-item {
     filter: drop-shadow(0 0 10px rgba(212, 181, 232, 0.1));
 }
+
+/* ── Auth nav buttons ── */
+.nav-signin-btn {
+    background: linear-gradient(135deg, #d4b5e8, #f5c9d4);
+    color: var(--text-dark) !important;
+    font-weight: 600; font-size: 0.82rem;
+    padding: 5px 14px; border-radius: 50px;
+    border: none; white-space: nowrap;
+    transition: opacity 0.2s;
+}
+.nav-signin-btn:hover { opacity: 0.85; }
+
+.nav-signout-btn {
+    background: rgba(255,255,255,0.45);
+    color: var(--text-dark) !important;
+    font-size: 0.78rem; padding: 4px 10px;
+    border-radius: 50px; border: 1px solid rgba(212,181,232,0.4);
+    white-space: nowrap; transition: background 0.2s;
+}
+.nav-signout-btn:hover { background: rgba(217,83,79,0.15); }
+
+.nav-user-name {
+    font-size: 0.82rem; color: var(--text-dark);
+    font-weight: 600; white-space: nowrap;
+    max-width: 120px; overflow: hidden; text-overflow: ellipsis;
+    display: inline-block;
+}

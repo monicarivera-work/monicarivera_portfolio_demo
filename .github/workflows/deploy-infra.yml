@@ -1,0 +1,43 @@
+# deploy-infra.yml — Deploy CodeLab storage infrastructure via Bicep
+# Run manually (workflow_dispatch) or on changes to infra/storage.bicep on main.
+#
+# Required GitHub secrets:
+#   AZURE_CREDENTIALS   — JSON output of: az ad sp create-for-rbac --sdk-auth
+#   AZURE_RESOURCE_GROUP — Name of the existing Azure Resource Group
+
+name: Deploy CodeLab Infrastructure
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - 'infra/storage.bicep'
+
+jobs:
+  deploy-infra:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Azure Login
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Deploy Storage Account (Bicep)
+        uses: azure/arm-deploy@v2
+        id: storage-deploy
+        with:
+          resourceGroupName: ${{ secrets.AZURE_RESOURCE_GROUP }}
+          template: infra/storage.bicep
+          failOnStdErr: false
+
+      - name: Print storage account name
+        run: |
+          echo "Storage account: ${{ steps.storage-deploy.outputs.storageAccountName }}"
+          echo "Set AZURE_STORAGE_CONNECTION_STRING in your App Service configuration using the connection string output."
