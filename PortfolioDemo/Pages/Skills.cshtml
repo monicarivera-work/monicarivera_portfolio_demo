@@ -105,10 +105,10 @@
                     @if (!string.IsNullOrEmpty(Model.ResumeFileName))
                     {
                         <span class="badge bg-warning text-dark">
-                            <a href="/file/download?fileName=@(Model.ResumeFileName).docx">Download Docx</a>
+                            <a href="/api/file/download?fileName=@(Model.ResumeFileName).docx">Download Docx</a>
                         </span>
                         <span class="badge bg-warning text-dark">
-                            <a href="/file/download?fileName=@(Model.ResumeFileName).pdf">Download PDF</a>
+                            <a href="/api/file/download?fileName=@(Model.ResumeFileName).pdf">Download PDF</a>
                         </span>
                     }
                     else

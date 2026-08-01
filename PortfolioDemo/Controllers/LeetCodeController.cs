@@ -16,7 +16,7 @@ namespace PortfolioDemo.Controllers
         }
 
         [HttpGet("stats")]
-        [EnableRateLimiting("ChatRateLimit")]
+        [EnableRateLimiting("LeetCodeRateLimit")]
         public async Task<IActionResult> GetStats()
         {
             var stats = await _leetCodeService.GetUserStatsAsync(Constants.LeetCodeUsername);

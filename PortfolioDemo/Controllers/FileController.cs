@@ -1,12 +1,12 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
-using PortfolioDemo.Pages.Shared.Helpers;
+using PortfolioDemo.Services;
 
 namespace PortfolioDemo.Controllers
 {
     [ApiController]
-    [Route("[controller]")]
-    public class FileController : Controller
+    [Route("api/[controller]")]
+    public class FileController : ControllerBase
     {
         private readonly FileShareHelper? _fileHelper;
         private readonly ILogger<FileController> _logger;

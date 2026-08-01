@@ -422,3 +422,6 @@ nohup.out
 
 # AI chat - runtime data (not committed; populated at runtime)
 PortfolioDemo/Data/unanswered_questions.json
+
+# Local development overrides - may contain secrets; use user secrets or env vars instead
+PortfolioDemo/appsettings.Development.json
